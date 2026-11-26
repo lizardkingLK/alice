@@ -163,26 +163,17 @@ their lines after copying `sample.env`. Do not leave `YOUR_*` placeholders in
 place because the API treats non-empty placeholder strings as configured
 values.
 
-#### Optional: GitHub source control (OAuth today + App Phase 0)
+#### Optional: GitHub source control (GitHub App)
 
-**Shipped today (manual PR links):** user **OAuth App** credentials:
-
-```dotenv
-GITHUB_CLIENT_ID="<OAuth App client id>"
-GITHUB_CLIENT_SECRET="<OAuth App client secret>"
-GITHUB_REDIRECT_URI="http://localhost:5000/api/github/oauth/callback"
-```
-
-**Phase 0 (GitHub App — register now, wire in Phase 1+):** create a GitHub App
-under GitHub → Settings → Developer settings → GitHub Apps (dev apps often use
-localhost homepage/callback and a **public HTTPS** webhook URL such as a Vercel
-API). After registration:
+New connects use **GitHub App install** only (user OAuth App env removed from
+`apps/api/sample.env`). Create a GitHub App under GitHub → Settings → Developer
+settings → GitHub Apps (dev apps often use localhost homepage/callback and a
+**public HTTPS** webhook URL such as a Vercel API). After registration:
 
 1. Copy **App ID**.
 2. Click **Generate a private key** and download the `.pem` (shown once).
 3. Set a **Webhook secret** (random 32+ bytes) — same value in GitHub and env.
-4. Put values in `apps/api/.env` (templates already list these keys in
-   `apps/api/sample.env`):
+4. Put values in `apps/api/.env` (keys listed in `apps/api/sample.env`):
 
 ```dotenv
 GITHUB_APP_ID="<numeric App ID>"
@@ -190,6 +181,8 @@ GITHUB_APP_ID="<numeric App ID>"
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
 GITHUB_APP_WEBHOOK_SECRET="<same secret as the GitHub App webhook form>"
 ```
+
+Also set `REDIS_URL` on api (and worker) when using webhook → queue sync.
 
 Suggested **dev** App URLs when registering:
 

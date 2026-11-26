@@ -1,2 +1,8 @@
 # logs
 *.log
+
+# Local / deploy secrets (sync scripts may copy .env.production onto the host)
+.env
+.env.*
+!.env.example
+!sample.env

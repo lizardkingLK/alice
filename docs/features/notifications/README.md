@@ -74,7 +74,7 @@ Inbox list filter: `user_id` + `status = active`, newest `created_at`, limit 50
 
 Destructive soft-archive and hard-purge mutations return **202** and finish in
 the API process (interim until BullMQ — see
-[WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md)). Completion
+[WORKER_STREAMER_AND_READER.md](../../architecture/WORKER_STREAMER_AND_READER.md)). Completion
 uses:
 
 | Type                    | When                             |

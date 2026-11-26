@@ -1,6 +1,6 @@
 /**
  * Stable BullMQ job `name` values.
- * Source-control kinds follow WORKER_AND_STREAMER + GITHUB_INTEGRATION Phase 2+.
+ * Source-control kinds follow WORKER_STREAMER_AND_READER + GITHUB_INTEGRATION Phase 2+.
  */
 export const JOB_KINDS = {
   githubWebhookIngest: 'github.webhook.ingest',

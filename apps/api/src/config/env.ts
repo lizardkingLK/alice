@@ -30,13 +30,9 @@ const serverSchema = z.object({
   ATLASSIAN_CLIENT_ID: z.string().min(1).optional(),
   ATLASSIAN_CLIENT_SECRET: z.string().min(1).optional(),
   ATLASSIAN_REDIRECT_URI: z.string().min(1).optional(),
-  /** GitHub OAuth app credentials — optional until GitHub Connect is used. */
-  GITHUB_CLIENT_ID: z.string().min(1).optional(),
-  GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
-  GITHUB_REDIRECT_URI: z.string().min(1).optional(),
   /**
    * GitHub App credentials (install identity + webhooks) — optional until
-   * Phase 1 install / Phase 2 webhook handlers consume them.
+   * App install / webhook handlers consume them.
    */
   GITHUB_APP_ID: z.string().min(1).optional(),
   GITHUB_APP_PRIVATE_KEY: z.string().min(1).optional(),
@@ -80,9 +76,6 @@ const mock: EnvSchemaType = {
   ATLASSIAN_CLIENT_ID: 'mock-atlassian-client-id',
   ATLASSIAN_CLIENT_SECRET: 'mock-atlassian-client-secret',
   ATLASSIAN_REDIRECT_URI: 'http://localhost:5000/api/jira/oauth/callback',
-  GITHUB_CLIENT_ID: 'mock-github-client-id',
-  GITHUB_CLIENT_SECRET: 'mock-github-client-secret',
-  GITHUB_REDIRECT_URI: 'http://localhost:5000/api/github/oauth/callback',
   GITHUB_APP_ID: '123456',
   // Unset in CI mock — App JWT tests generate keys locally / stub auth helpers.
   GITHUB_APP_PRIVATE_KEY: undefined,
@@ -119,9 +112,6 @@ const processEnv = {
   ATLASSIAN_CLIENT_ID: process.env.ATLASSIAN_CLIENT_ID,
   ATLASSIAN_CLIENT_SECRET: process.env.ATLASSIAN_CLIENT_SECRET,
   ATLASSIAN_REDIRECT_URI: process.env.ATLASSIAN_REDIRECT_URI,
-  GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
-  GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
-  GITHUB_REDIRECT_URI: process.env.GITHUB_REDIRECT_URI,
   GITHUB_APP_ID: process.env.GITHUB_APP_ID,
   GITHUB_APP_PRIVATE_KEY: process.env.GITHUB_APP_PRIVATE_KEY,
   GITHUB_APP_WEBHOOK_SECRET: process.env.GITHUB_APP_WEBHOOK_SECRET,

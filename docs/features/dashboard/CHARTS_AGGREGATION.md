@@ -5,7 +5,8 @@ API + live Chart widget pie/table; cloud workspaces + Views `resource_kind`
 bookmarks + Widget settings. **Next:** Charts **Burndown** widget on a dedicated
 time-series rollup (implementation steps below). Nested donut and other catalog
 types stay design-only until open questions are locked.
-Tier 2/3 remain design-only (see below).
+Tier 2/3 (reader + read model) are design-only and live in
+[WORKER_STREAMER_AND_READER.md](../../architecture/WORKER_STREAMER_AND_READER.md).
 
 Replaces in-memory chart mocks with precomputed **rollup** statistics and
 paginated drilldown. Heavy joins per pie slice (or per burndown day) are out of
@@ -19,6 +20,7 @@ Related:
 - Performance: [PERFORMANCE.md](../../guides/PERFORMANCE.md)
 - User guide: [charts.md](../../user-guide/navigation/charts.md)
 - Views indexing plan: [FAVORITES_AND_VIEWS.md](../views/FAVORITES_AND_VIEWS.md#chart-workspaces)
+- Long-lived apps / Tier 2–3 scale: [WORKER_STREAMER_AND_READER.md](../../architecture/WORKER_STREAMER_AND_READER.md)
 
 ---
 
@@ -36,52 +38,24 @@ Related:
 
 ## Tiers
 
-| Tier  | Scope                                                                                                                                                | Status                              |
-| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| **1** | Same Supabase DB: categorical rollup + series/drilldown; Chart widget; cloud workspaces + Views; **Burndown widget + burndown rollup (in progress)** | **Categorical done; burndown next** |
-| **2** | Lean `work_items` read model on **Neon**; **Render `reader`**; **Upstash** queue; Express **post-commit** publisher; **Pusher** auth as streamer     | Later                               |
-| **3** | Whole-app reads on Neon; **apps rename** first; separate architecture doc                                                                            | Later                               |
+| Tier  | Scope                                                                                                            | Status / home                                                                                           |
+| ----- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **1** | Same write DB: categorical + hierarchy + burndown + contribution rollups; Chart widget; cloud workspaces + Views | **This file** (living)                                                                                  |
+| **2** | Lean read model + `apps/reader` + worker apply + streamer invalidate                                             | [WORKER_STREAMER_AND_READER.md](../../architecture/WORKER_STREAMER_AND_READER.md#charts-tier-2--tier-3) |
+| **3** | Whole-app reads on the read model (keep `web` / `api` names)                                                     | Same architecture doc                                                                                   |
 
 ### Tier 1 locks
 
-- Measure: **`item_count` only** (story points in a later migration)
+- Measure: **`item_count` only** on categorical rollup (story points in a later migration; nested-donut has its own measure)
 - Bucket: `(created_at)::date`
 - One shared dimensional rollup for categorical charts (pie now; bar later via `GROUP BY`)
 - Slice → table: live `work_items`, paginated (not ID lists in the rollup)
 - Board JSON lives on **`charts.board_json`** — never inside `saved_views.search`
-- Chart listing in Views uses typed `saved_views.resource_kind` / `resource_id` (see remaining steps)
+- Chart listing in Views uses typed `saved_views.resource_kind` / `resource_id`
 
-### Tier 2 locks
-
-- Browser → Render **reader** → Neon
-- Enqueue: Express **post-commit** publisher (generic interceptor) → **Upstash Redis + BullMQ** (see [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md); not QStash-as-primary)
-- Neon holds a **lean** `work_items` projection (+ chart reads), not a full row mirror of the whole schema
-- Queue **consumer on `worker`**; **reader** HTTP-only
-- **Streamer** = Pusher auth/BFF until outgrown (native WS later if needed)
-- Cutover: dual-run + feature flag
-
-### Tier 3 locks
-
-- Whole-app Neon reads
-- Rename deployables **before** that migration (see below)
-- Own follow-up documentation when started; this file only outlines the target
-
----
-
-## Future apps (Tier 2+)
-
-Keep **`web` / `api` names**. Add siblings as needed (do not rename to `client` /
-`writer` for symmetry — see [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md)).
-
-| App             | Role                                                                |
-| --------------- | ------------------------------------------------------------------- |
-| `apps/web`      | UI (Vercel) — unchanged name                                        |
-| `apps/api`      | Mutations + post-commit publish (Vercel) — unchanged name           |
-| `apps/reader`   | Neon-backed read HTTP API (Render) — later                          |
-| `apps/streamer` | Realtime gateway (Pusher auth / façade; native WS if outgrown)      |
-| `apps/worker`   | Long-running jobs, BullMQ consumers, AI tools, heavy crons (Render) |
-
-Tier 2 may add `worker` / `streamer` / `reader` without renaming `web` / `api`.
+Tier 2/3 locks, future apps table, and topology live only in
+[WORKER_STREAMER_AND_READER.md](../../architecture/WORKER_STREAMER_AND_READER.md)
+(self-host first; Supabase Auth retained after DB/storage unwind).
 
 ---
 
@@ -274,14 +248,11 @@ lists index chart entries without scanning pathnames.
 
 ## Tier 2 / 3 (not in current implementation)
 
-```text
-writer post-commit → Upstash → worker apply → Neon
-client → reader (JWT + ACL) → Neon
-worker/reader → Pusher → client invalidate
-```
-
-Whole-app Neon reads and the apps rename are **Tier 3**; expand in a dedicated
-architecture doc when that program starts.
+Moved to
+[WORKER_STREAMER_AND_READER.md — Charts Tier 2 / Tier 3](../../architecture/WORKER_STREAMER_AND_READER.md#charts-tier-2--tier-3)
+(`api` post-commit → worker apply → read model; `web` → `reader`; streamer
+invalidate). Keep building Tier 1 rollups here; do not duplicate scale-plane
+detail in this file.
 
 ---
 
@@ -339,8 +310,8 @@ Dashboard overview already ships a live burndown via `computeBurndown` + sprint
 embed / `GET /api/sprints/:id/burndown`
 ([BURNDOWN_CHART.md](../sprints/BURNDOWN_CHART.md)). Charts should converge on
 the **same series semantics**, but **read from rollup** so widget loads stay
-cheap and syncable when we later move chart reads to a replica / reader service
-(Tier 2).
+cheap and syncable when we later move chart reads to a replica / `apps/reader`
+([Tier 2](../../architecture/WORKER_STREAMER_AND_READER.md#charts-tier-2--tier-3)).
 
 ### Why a rollup (scaling agreement)
 
@@ -517,7 +488,8 @@ Still open for other programs:
 
 ## Non-goals (current Tier 1 window)
 
-- Neon / Render / Upstash / apps rename (Tier 2+)
+- Read-plane Tier 2+ (`apps/reader`, Neon/replica, post-commit apply) — see
+  [WORKER_STREAMER_AND_READER.md](../../architecture/WORKER_STREAMER_AND_READER.md)
 - Story points on the **categorical** rollup (nested-donut has its own measure)
 - Postgres `REFRESH MATERIALIZED VIEW`
 - Overloading `work_item_chart_rollups` with burndown remaining/ideal

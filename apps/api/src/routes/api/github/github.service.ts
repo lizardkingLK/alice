@@ -1,4 +1,3 @@
-import { env } from '../../../config/env';
 import {
   decryptSecret,
   encryptSecret,
@@ -32,21 +31,16 @@ import {
 } from './github-app-auth';
 import {
   GithubConnectionStatusEnum,
-  GithubInsufficientScopeError,
   GithubReauthorizationRequiredError,
   type GithubApiRepoResponse,
   type GithubConnectionDto,
   type GithubInstallationRepositoriesResponse,
   type GithubRepoOption,
-  type GithubTokenResponse,
-  type GithubUserResponse,
 } from './github.types';
 
-const OAUTH_SCOPES = 'repo read:user';
 const APP_INSTALLATION_SCOPES = 'github_app:installation';
 const ACCESS_TOKEN_SKEW_MS = 60 * 1000;
 const GITHUB_API_URL = 'https://api.github.com';
-const GITHUB_OAUTH_URL = 'https://github.com/login/oauth';
 const GITHUB_APP_INSTALL_STATE_PURPOSE = 'sign GitHub App install state (HMAC)';
 
 async function requireGithubManager(actorId: string) {
@@ -57,45 +51,8 @@ async function requireGithubManager(actorId: string) {
   );
 }
 
-function requireGithubConfig(): {
-  clientId: string;
-  clientSecret: string;
-  redirectUri: string;
-} {
-  const clientId = env.GITHUB_CLIENT_ID;
-  const clientSecret = env.GITHUB_CLIENT_SECRET;
-  const redirectUri = env.GITHUB_REDIRECT_URI;
-  if (!clientId || !clientSecret || !redirectUri) {
-    throw new Error(
-      'GitHub OAuth is not configured. Set GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, and GITHUB_REDIRECT_URI.'
-    );
-  }
-  return { clientId, clientSecret, redirectUri };
-}
-
 export class GithubService {
   constructor(private readonly githubRepository: GithubRepository) {}
-
-  buildAuthorizeUrl(userId: string): string {
-    const { clientId, redirectUri } = requireGithubConfig();
-    const state = createOAuthState(userId, 'sign GitHub OAuth state (HMAC)');
-
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      scope: OAUTH_SCOPES,
-      state,
-      prompt: 'select_account',
-    });
-
-    return `${GITHUB_OAUTH_URL}/authorize?${params.toString()}`;
-  }
-
-  async startOAuth(actorId: string): Promise<{ url: string }> {
-    await requireGithubManager(actorId);
-    await this.assertCanEstablishConnection(actorId);
-    return { url: this.buildAuthorizeUrl(actorId) };
-  }
 
   buildAppInstallUrl(userId: string, appSlug: string): string {
     requireGithubAppConfig();
@@ -162,46 +119,6 @@ export class GithubService {
     return this.toConnectionDto(row, userId, actor.role);
   }
 
-  async handleOAuthCallback(
-    code: string,
-    state: string
-  ): Promise<GithubConnectionDto> {
-    const { userId } = verifyOAuthState(
-      state,
-      'sign GitHub OAuth state (HMAC)'
-    );
-    const actor = await requireGithubManager(userId);
-    await this.assertCanEstablishConnection(userId);
-
-    const tokens = await this.exchangeAuthorizationCode(code);
-    const userInfo = await this.fetchUserProfile(tokens.access_token);
-
-    const expiresAt = tokens.expires_in
-      ? new Date(utcNow().getTime() + tokens.expires_in * 1000)
-      : null;
-
-    const row = await this.githubRepository.upsertConnection({
-      userId,
-      externalId: String(userInfo.id),
-      displayLabel: `GitHub (@${userInfo.login})`,
-      providerConfig: buildGithubProviderConfig({
-        auth_mode: GithubAuthModeEnum.oauth,
-        account_login: userInfo.login,
-        account_name: userInfo.name ?? null,
-        account_avatar_url: userInfo.avatar_url ?? null,
-      }),
-      refreshTokenEnc: tokens.refresh_token
-        ? encryptSecret(tokens.refresh_token)
-        : '',
-      accessTokenEnc: encryptSecret(tokens.access_token),
-      accessTokenExpiresAt: expiresAt,
-      scopes: tokens.scope ?? OAUTH_SCOPES,
-      status: VersionControlConnectionStatus.active,
-    });
-
-    return this.toConnectionDto(row, userId, actor.role);
-  }
-
   async listConnections(actorId: string): Promise<GithubConnectionDto[]> {
     const actor = await requireUserWithRole(
       actorId,
@@ -257,44 +174,13 @@ export class GithubService {
     }
 
     const config = tryParseGithubProviderConfig(connection.provider_config);
-    if (config?.auth_mode === GithubAuthModeEnum.app) {
-      return await this.getValidInstallationToken(connection, config);
-    }
-
-    if (!connection.access_token_enc) {
+    if (config?.auth_mode !== GithubAuthModeEnum.app) {
       throw new GithubReauthorizationRequiredError(
-        'GitHub access token is missing. Please reconnect GitHub.'
+        'GitHub user OAuth is retired. Install the GitHub App to continue.'
       );
     }
 
-    if (!this.hasRequiredScopes(connection.scopes)) {
-      throw new GithubInsufficientScopeError(
-        'GitHub connection has insufficient permissions. Reconnecting with required scopes is needed.'
-      );
-    }
-
-    const expiresAt = connection.access_token_expires_at
-      ? connection.access_token_expires_at.getTime()
-      : null;
-    const isExpired =
-      expiresAt !== null &&
-      expiresAt <= utcNow().getTime() + ACCESS_TOKEN_SKEW_MS;
-
-    if (!isExpired) {
-      return decryptSecret(connection.access_token_enc);
-    }
-
-    if (!connection.refresh_token_enc) {
-      await this.githubRepository.updateStatus(
-        connection.id,
-        VersionControlConnectionStatus.expired
-      );
-      throw new GithubReauthorizationRequiredError(
-        'GitHub access token has expired and no refresh token is available. Please reconnect GitHub.'
-      );
-    }
-
-    return await this.refreshAccessToken(connection);
+    return await this.getValidInstallationToken(connection, config);
   }
 
   async listRepositories(
@@ -303,24 +189,18 @@ export class GithubService {
   ): Promise<GithubRepoOption[]> {
     await requireGithubManager(actorId);
 
-    const connection = connectionId
-      ? await this.githubRepository.findById(connectionId)
-      : await this.githubRepository.findActive();
-    const config = tryParseGithubProviderConfig(connection?.provider_config);
     const accessToken = await this.getValidAccessToken(connectionId);
 
-    const listUrl =
-      config?.auth_mode === GithubAuthModeEnum.app
-        ? `${GITHUB_API_URL}/installation/repositories?per_page=100`
-        : `${GITHUB_API_URL}/user/repos?per_page=100&sort=updated`;
-
-    const response = await fetch(listUrl, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: 'application/vnd.github+json',
-        'User-Agent': 'Alice-App',
-      },
-    });
+    const response = await fetch(
+      `${GITHUB_API_URL}/installation/repositories?per_page=100`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'Alice-App',
+        },
+      }
+    );
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
@@ -334,14 +214,9 @@ export class GithubService {
       );
     }
 
-    if (config?.auth_mode === GithubAuthModeEnum.app) {
-      const payload =
-        (await response.json()) as GithubInstallationRepositoriesResponse;
-      return (payload.repositories ?? []).map((repo) => this.mapApiRepo(repo));
-    }
-
-    const data = (await response.json()) as GithubApiRepoResponse[];
-    return data.map((repo) => this.mapApiRepo(repo));
+    const payload =
+      (await response.json()) as GithubInstallationRepositoriesResponse;
+    return (payload.repositories ?? []).map((repo) => this.mapApiRepo(repo));
   }
 
   private async assertCanEstablishConnection(actorId: string): Promise<void> {
@@ -430,139 +305,6 @@ export class GithubService {
     }
   }
 
-  private hasRequiredScopes(grantedScope?: string): boolean {
-    if (!grantedScope) {
-      return true;
-    }
-    if (grantedScope === APP_INSTALLATION_SCOPES) {
-      return true;
-    }
-    const scopes = new Set(
-      grantedScope
-        .split(/[,\s]+/)
-        .map((s) => s.trim())
-        .filter(Boolean)
-    );
-    return scopes.has('repo') || scopes.has('public_repo');
-  }
-
-  private async refreshAccessToken(
-    connection: VcConnectionFull
-  ): Promise<string> {
-    const { clientId, clientSecret } = requireGithubConfig();
-    const refreshToken = decryptSecret(connection.refresh_token_enc);
-
-    const response = await fetch(`${GITHUB_OAUTH_URL}/access_token`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: clientId,
-        client_secret: clientSecret,
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-      }),
-    });
-
-    if (!response.ok) {
-      await this.githubRepository.updateStatus(
-        connection.id,
-        VersionControlConnectionStatus.expired
-      );
-      const errorText = await response.text();
-      throw new GithubReauthorizationRequiredError(
-        `Failed to refresh GitHub access token (${response.status}): ${errorText}`
-      );
-    }
-
-    const data = (await response.json()) as GithubTokenResponse;
-    if (data.error) {
-      await this.githubRepository.updateStatus(
-        connection.id,
-        VersionControlConnectionStatus.expired
-      );
-      throw new GithubReauthorizationRequiredError(
-        `GitHub token refresh failed: ${data.error_description || data.error}`
-      );
-    }
-
-    const expiresAt = data.expires_in
-      ? new Date(utcNow().getTime() + data.expires_in * 1000)
-      : connection.access_token_expires_at;
-
-    const nextRefreshToken = data.refresh_token
-      ? encryptSecret(data.refresh_token)
-      : connection.refresh_token_enc;
-
-    await this.githubRepository.updateTokens(connection.id, {
-      accessTokenEnc: encryptSecret(data.access_token),
-      refreshTokenEnc: nextRefreshToken,
-      accessTokenExpiresAt: expiresAt,
-      scopes: data.scope ?? connection.scopes,
-    });
-
-    return data.access_token;
-  }
-
-  private async exchangeAuthorizationCode(
-    code: string
-  ): Promise<GithubTokenResponse> {
-    const { clientId, clientSecret, redirectUri } = requireGithubConfig();
-
-    const response = await fetch(`${GITHUB_OAUTH_URL}/access_token`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code,
-        redirect_uri: redirectUri,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `GitHub token exchange failed (${response.status}): ${errorText}`
-      );
-    }
-
-    const data = (await response.json()) as GithubTokenResponse;
-    if (data.error) {
-      throw new Error(
-        `GitHub authorization error: ${data.error_description || data.error}`
-      );
-    }
-
-    return data;
-  }
-
-  private async fetchUserProfile(
-    accessToken: string
-  ): Promise<GithubUserResponse> {
-    const response = await fetch(`${GITHUB_API_URL}/user`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: 'application/vnd.github.v3+json',
-        'User-Agent': 'Alice-App',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Failed to fetch GitHub user profile (${response.status}): ${errorText}`
-      );
-    }
-
-    return (await response.json()) as GithubUserResponse;
-  }
-
   private toConnectionDto(
     row: VcConnectionPublic | VcConnectionFull,
     actorId?: string,
@@ -590,7 +332,7 @@ export class GithubService {
         row.status === VersionControlConnectionStatus.active
           ? GithubConnectionStatusEnum.active
           : GithubConnectionStatusEnum.revoked,
-      auth_mode: config?.auth_mode ?? GithubAuthModeEnum.oauth,
+      auth_mode: config?.auth_mode ?? GithubAuthModeEnum.app,
       account_login: config?.account_login || 'unknown',
       account_id: row.external_id,
       account_name: config?.account_name ?? undefined,

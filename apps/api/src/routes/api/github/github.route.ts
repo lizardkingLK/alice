@@ -63,6 +63,14 @@ async function respondWithAuthorizeUrl(
   }
 }
 
+function respondGithubOauthRetired(res: Response, error: string) {
+  return res.status(410).json({
+    error,
+    prefer: '/api/github/app/install/start',
+    code: 'github_oauth_retired',
+  });
+}
+
 export function createGithubRouter(deps: GithubRouterDeps) {
   const { githubService } = deps;
   const githubRouter: Router = Router();
@@ -101,41 +109,20 @@ export function createGithubRouter(deps: GithubRouterDeps) {
     }
   });
 
-  /**
-   * Phase 5: new connects use GitHub App install only.
-   * Legacy OAuth callback + existing oauth rows still work.
-   */
-  githubRouter.get('/oauth/start', requireApiAuth, async (_req, res) => {
-    return res.status(410).json({
-      error:
-        'GitHub user OAuth connect is retired. Use GitHub App install instead.',
-      prefer: '/api/github/app/install/start',
-      code: 'github_oauth_retired',
-    });
-  });
+  /** Phase 5: user OAuth connect retired — App install only. */
+  githubRouter.get('/oauth/start', requireApiAuth, async (_req, res) =>
+    respondGithubOauthRetired(
+      res,
+      'GitHub user OAuth connect is retired. Use GitHub App install instead.'
+    )
+  );
 
-  githubRouter.get('/oauth/callback', async (req, res) => {
-    const code = typeof req.query.code === 'string' ? req.query.code : '';
-    const state = typeof req.query.state === 'string' ? req.query.state : '';
-    const oauthError =
-      typeof req.query.error === 'string' ? req.query.error : '';
-
-    if (oauthError) {
-      return redirectGithubDone(res, 'denied', oauthError);
-    }
-
-    if (!code || !state) {
-      return redirectGithubDone(res, 'error');
-    }
-
-    try {
-      await githubService.handleOAuthCallback(code, state);
-      return redirectGithubDone(res, 'connected');
-    } catch (error) {
-      console.error('error. github oauth callback failed:', error);
-      return redirectGithubDone(res, 'error');
-    }
-  });
+  githubRouter.get('/oauth/callback', async (_req, res) =>
+    respondGithubOauthRetired(
+      res,
+      'GitHub user OAuth callback is retired. Use GitHub App install instead.'
+    )
+  );
 
   githubRouter.get(
     '/app/install/start',

@@ -2,6 +2,7 @@ import type {
   GithubSyncPushPayload,
   GithubWebhookIngestPayload,
 } from '@repo/jobs';
+import { asNonEmptyString, asPositiveInt } from './parse-helpers';
 
 type GithubPushBody = {
   ref?: unknown;
@@ -16,18 +17,6 @@ type GithubPushBody = {
   };
   installation?: { id?: unknown };
 };
-
-function asNonEmptyString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim().length > 0
-    ? value.trim()
-    : null;
-}
-
-function asPositiveInt(value: unknown): number | null {
-  return typeof value === 'number' && Number.isInteger(value) && value > 0
-    ? value
-    : null;
-}
 
 function branchNameFromRef(ref: string): string | null {
   const prefix = 'refs/heads/';

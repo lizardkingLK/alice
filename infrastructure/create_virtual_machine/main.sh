@@ -1,69 +1,97 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Provision / destroy the Alice worker host on OCI Ampere A1 (Always Free).
+# Requires: terraform (see ../install.sh), OCI API key, and tenancy OCIDs.
+#
+# Usage:
+#   ./main.sh apply
+#   ./main.sh destroy
+#
+# Credentials (export before running, or place in the environment):
+#   TF_VAR_tenancy_ocid
+#   TF_VAR_user_ocid
+#   TF_VAR_fingerprint
+#   TF_VAR_private_key_path   # absolute or relative path to API PEM
+#   TF_VAR_region             # home region, e.g. ap-sydney-1
+#   TF_VAR_compartment_ocid
 
 KEY_NAME="alice_key"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${SCRIPT_DIR}"
 
-# Helper function to print usage guidelines
 print_usage() {
-    echo "warn. usage for deployment:"
-    echo "  $0 apply <AWS_ACCESS_KEY_ID> <AWS_SECRET_ACCESS_KEY> <AWS_REGION>"
-    echo ""
-    echo "warn. usage for destruction:"
-    echo "  $0 destroy <AWS_ACCESS_KEY_ID> <AWS_SECRET_ACCESS_KEY> <AWS_REGION>"
-    exit 1
+  echo "warn. usage:"
+  echo "  $0 apply"
+  echo "  $0 destroy"
+  echo ""
+  echo "warn. required env:"
+  echo "  TF_VAR_tenancy_ocid TF_VAR_user_ocid TF_VAR_fingerprint"
+  echo "  TF_VAR_private_key_path TF_VAR_region TF_VAR_compartment_ocid"
+  exit 1
 }
 
-# Ensure minimum number of parameters are present
-if [ "$#" -ne 4 ]; then
+require_env() {
+  local missing=0
+  for name in \
+    TF_VAR_tenancy_ocid \
+    TF_VAR_user_ocid \
+    TF_VAR_fingerprint \
+    TF_VAR_private_key_path \
+    TF_VAR_region \
+    TF_VAR_compartment_ocid
+  do
+    if [[ -z "${!name:-}" ]]; then
+      echo "error. missing ${name}"
+      missing=1
+    fi
+  done
+  if [[ "${missing}" -ne 0 ]]; then
     print_usage
+  fi
+}
+
+if [[ $# -ne 1 ]]; then
+  print_usage
 fi
 
 ACTION="$1"
-export AWS_ACCESS_KEY_ID="$2"
-export AWS_SECRET_ACCESS_KEY="$3"
-export TF_VAR_aws_region="$4"
+require_env
 
-# Handle DESTROY action
-if [ "$ACTION" == "destroy" ]; then
-    echo "info. initializing Terraform for destruction..."
-    terraform init
-    
-    echo "info. destroying all created AWS infrastructure..."
-    terraform destroy -auto-approve
-    
-    echo "info. infrastructure removed successfully!"
-    exit 0
+export TF_VAR_ssh_public_key_path="${TF_VAR_ssh_public_key_path:-./${KEY_NAME}.pub}"
 
-# Handle APPLY action
-elif [ "$ACTION" == "apply" ]; then
-    # Generate SSH Key Pair if it doesn't exist
-    if [ ! -f "./$KEY_NAME" ]; then
-        echo "info. generating SSH key pair..."
-        ssh-keygen -t rsa -b 4096 -f "./$KEY_NAME" -N ""
-        # Secures the private key permissions for SSH
-        chmod 400 "./$KEY_NAME"
-        echo "info. keys created: ./$KEY_NAME"
-    else
-        echo "info. SSH key already exists. skipping generation."
-    fi
-
-    echo "info. initializing Terraform..."
-    terraform init
-
-    echo "info. applying infrastructure changes..."
-    terraform apply -auto-approve
-
-    echo "--------------------------------------------------------"
-    echo "info. deployment complete!"
-    echo "info. to log into your machine, replace 'YOUR_PATH_TO_PRIVATE_KEY' with your actual key file path."
-    echo "info. if you are running from this directory, your key is: ./${KEY_NAME}"
-    echo "--------------------------------------------------------"
-    
-    # Extract and display the custom output directly from Terraform
-    terraform output ssh_connection_command
-    echo "--------------------------------------------------------"
-
-else
-    echo "error. invalid action '$ACTION'."
-    print_usage
+if [[ "${ACTION}" == "destroy" ]]; then
+  echo "info. initializing Terraform..."
+  terraform init -upgrade
+  echo "info. destroying OCI worker infrastructure..."
+  terraform destroy -auto-approve
+  echo "info. infrastructure removed successfully"
+  exit 0
 fi
+
+if [[ "${ACTION}" != "apply" ]]; then
+  echo "error. invalid action '${ACTION}'"
+  print_usage
+fi
+
+if [[ ! -f "./${KEY_NAME}" ]]; then
+  echo "info. generating SSH key pair..."
+  ssh-keygen -t ed25519 -f "./${KEY_NAME}" -N ""
+  chmod 400 "./${KEY_NAME}"
+  echo "info. keys created: ./${KEY_NAME} and ./${KEY_NAME}.pub"
+else
+  echo "info. SSH key already exists. skipping generation"
+fi
+
+echo "info. initializing Terraform (oracle/oci ~> 9.x)..."
+terraform init -upgrade
+
+echo "info. applying infrastructure changes (VM.Standard.A1.Flex)..."
+terraform apply -auto-approve
+
+echo "--------------------------------------------------------"
+echo "info. deployment complete"
+echo "info. SSH key (this directory): ./${KEY_NAME}"
+terraform output -raw ssh_connection_command
+echo ""
+echo "--------------------------------------------------------"

@@ -11,7 +11,7 @@ feed an in-app **workflow orchestrator** that can enqueue **agent tools**
 
 **Related:** [Projects README](./README.md),
 [JIRA_INTEGRATION.md](./JIRA_INTEGRATION.md) (shared crypto and popup UX),
-[WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md),
+[WORKER_STREAMER_AND_READER.md](../../architecture/WORKER_STREAMER_AND_READER.md),
 [INTEGRATION_SCOPES.md](../integrations/INTEGRATION_SCOPES.md),
 user guide [project-integrations.md](../../user-guide/projects/project-integrations.md)
 
@@ -55,15 +55,15 @@ flowchart TB
 
 ## Phased delivery (planned)
 
-| Phase | Deliverable                                                                                                              | Depends on          |
-| ----- | ------------------------------------------------------------------------------------------------------------------------ | ------------------- |
-| **0** | App registration checklist + env shape in docs (this section)                                                            | —                   |
-| **1** | Install UX + `installation_id` on `version_control_connections`; project bind via `vc_*`                                 | 0                   |
-| **2** | Signed webhooks → enqueue → worker sync for **PRs, commits, branches**                                                   | 1 + worker skeleton |
-| **3** | Normalized SC domain events + job kinds aligned with [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md) | 2                   |
-| **4** | Workflow orchestrator MVP; agent tools (e.g. Cursor) with human-in-the-loop                                              | 3                   |
-| **5** | Migrate off user OAuth; optional write-back (checks/comments); Issues policy TBD                                         | 4                   |
-| **6** | Deploy `apps/worker` on **Oracle Cloud Always Free** (systemd + CI SSH/deploy hook)                                      | 2+ (ops last)       |
+| Phase | Deliverable                                                                                                                            | Depends on          |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| **0** | App registration checklist + env shape in docs (this section)                                                                          | —                   |
+| **1** | Install UX + `installation_id` on `version_control_connections`; project bind via `vc_*`                                               | 0                   |
+| **2** | Signed webhooks → enqueue → worker sync for **PRs, commits, branches**                                                                 | 1 + worker skeleton |
+| **3** | Normalized SC domain events + job kinds aligned with [WORKER_STREAMER_AND_READER.md](../../architecture/WORKER_STREAMER_AND_READER.md) | 2                   |
+| **4** | Workflow orchestrator MVP; agent tools (e.g. Cursor) with human-in-the-loop                                                            | 3                   |
+| **5** | Migrate off user OAuth; optional write-back (checks/comments); Issues policy TBD                                                       | 4                   |
+| **6** | OCI worker host (A1 Always Free when available; AMD fallback OK); systemd + CI SSH                                                     | 2+ (ops last)       |
 
 ### Phase 0 — Foundations
 
@@ -105,22 +105,18 @@ or webhook handler required yet. Also covered in
 #### Env shape (`apps/api/.env`)
 
 ```dotenv
-# Phase 0+ GitHub App (install identity + webhooks)
+# GitHub App (install identity + webhooks)
 GITHUB_APP_ID="<numeric App ID>"
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
 GITHUB_APP_WEBHOOK_SECRET="<webhook secret from the App form>"
 
-# Phase 2+ BullMQ broker (Upstash Redis) — api produces, worker consumes
+# BullMQ broker (Upstash Redis) — api produces, worker consumes
 REDIS_URL="rediss://default:...@....upstash.io:6379"
-
-# Shipped today — user OAuth App (keep until Phase 5)
-GITHUB_CLIENT_ID="..."
-GITHUB_CLIENT_SECRET="..."
-GITHUB_REDIRECT_URI="http://localhost:5000/api/github/oauth/callback"
 ```
 
-Keys are listed in `apps/api/sample.env`. Runtime wiring of `GITHUB_APP_*` lands
-in Phase 1–2; storing them in Day One env is still the Phase 0 outcome.
+Keys are listed in `apps/api/sample.env`. User OAuth App
+(`GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` / `GITHUB_REDIRECT_URI`) is
+retired — omit from new env files; remove from deploy secrets if still present.
 
 #### Phase 0 done when
 
@@ -231,18 +227,34 @@ Scans PR title, branch name, and commit messages for the same forms.
 - Legacy OAuth **callback** + existing `auth_mode: oauth` connections still work
   until operators reinstall with the App.
 
+**Phase 5 env / rows:** oauth connection rows gone; `GITHUB_CLIENT_*` removed
+from `apps/api/sample.env` and `apps/api` `env.ts`. OAuth start/callback return
+**410**; token path is App install only.
+
 **Still open in Phase 5:**
 
-- Forced migrate / delete oauth rows; drop `GITHUB_CLIENT_*` env.
 - Expand App permissions for checks / PR comments as workflows need.
 - Optional GitHub Issues policy (link vs import).
 
 ### Phase 6 — Worker host (ops last)
 
-- Deploy `apps/worker` on **Oracle Cloud Always Free** (long-lived VM +
-  systemd; CI via SSH after GitHub Actions). Product sync does not depend on
-  this host being live in every environment — local/dev can run the worker
-  beside `api`.
+**Live host:** Oracle **Singapore** **AMD** VM (Console). Always Free Ampere
+(`VM.Standard.A1.Flex`) was **out of pool** in-region, so the VM is **not**
+Always Free–badged. **SSH works** — ready for runtime install.
+
+**IaC (landed sketch, A1-oriented):** Terraform HCL under
+`infrastructure/create_virtual_machine/` (provider `oracle/oci` `~> 9.0`),
+invoked by `main.sh` (`apply` / `destroy`). Prefer A1 2 OCPU / 12 GB when the
+home-region pool has capacity; otherwise keep a Console AMD (or other) VM.
+Install Terraform with `infrastructure/install.sh`. See
+`infrastructure/README.md`.
+
+**Still open in Phase 6:**
+
+- Runtime runbook on the SSH VM (Node/pnpm or image, env, systemd unit).
+- CI SSH deploy after GitHub Actions.
+- Product sync does not require this host in every environment — local/dev can
+  run the worker beside `api`.
 
 ### Locks
 
