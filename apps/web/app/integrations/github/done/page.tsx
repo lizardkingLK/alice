@@ -6,8 +6,8 @@ import { OAuthCompletionView } from '@/app/integrations/_components/oauth-comple
 import { IntegrationOAuthProvider } from '@/app/integrations/_types/oauth-completion.types';
 
 /**
- * Landing for the GitHub OAuth popup after user consent.
- * Displays "Connected Successfully" and notifies the parent window.
+ * Landing for the GitHub connect popup after App install (or legacy OAuth).
+ * Displays success/error and notifies the parent window.
  */
 export default function GithubOAuthDonePage() {
   return (

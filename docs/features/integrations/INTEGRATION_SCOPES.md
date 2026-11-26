@@ -286,7 +286,7 @@ PRs/commits/branches, then an in-app **workflow orchestrator** that can enqueue
 `integrations` rows. Phases **0–5**:
 [GITHUB_INTEGRATION.md](../projects/GITHUB_INTEGRATION.md#phased-delivery-planned).
 Runtime contract:
-[WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md).
+[WORKER_STREAMER_AND_READER.md](../../architecture/WORKER_STREAMER_AND_READER.md).
 
 ---
 

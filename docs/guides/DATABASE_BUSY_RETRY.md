@@ -28,7 +28,7 @@ Tracked in [alice#562](https://github.com/lizardkingLK/alice/issues/562).
    notifications (`project_created` / `project_create_failed`, or
    `entity_archived` / `entity_archive_failed` / `entity_purged` /
    `entity_purge_failed`). See
-   [WORKER_AND_STREAMER.md](../architecture/WORKER_AND_STREAMER.md) for the
+   [WORKER_STREAMER_AND_READER.md](../architecture/WORKER_STREAMER_AND_READER.md) for the
    interim in-process pattern and the BullMQ migration checklist.
 
 ## Related

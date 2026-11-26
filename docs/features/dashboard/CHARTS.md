@@ -231,7 +231,7 @@ matches; otherwise live items + worklogs and best-effort
 `rebuild_sprint_analytics_rollups` (also refreshes burndown). Shared helpers in
 `packages/types/src/sprint-contribution.ts`.
 
-Tier 2/3 (Neon read model, apps rename): [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md).
+Tier 2/3 (reader + read model): [WORKER_STREAMER_AND_READER.md](../../architecture/WORKER_STREAMER_AND_READER.md#charts-tier-2--tier-3).
 
 ## Save option, descriptions, Alice suggest
 
@@ -343,7 +343,7 @@ dashboard**.
 - Nested widget route as the only configuration UI
 - Sharing Favorites
 - Native Charts Share dialog / Shared-with-me registry tab (Views share is enough)
-- Neon / Render / Upstash wiring (Tier 2+)
+- Reader / read-model wiring (Tier 2+) — see [WORKER_STREAMER_AND_READER.md](../../architecture/WORKER_STREAMER_AND_READER.md#charts-tier-2--tier-3)
 - Other Coming soon catalog types (Numbers, Battery, Gantt, …)
 - Reintroducing `is_overview` alongside `show_on_dashboard`
 

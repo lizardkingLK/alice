@@ -9,6 +9,7 @@ import routesConfig from './config/routing';
 import jsonConfig from './config/json';
 import errorConfig from './config/errors';
 import poweredBy from './config/security';
+import { startWorkers } from './jobs/start-workers';
 
 const app: Express = express();
 
@@ -18,7 +19,6 @@ app.use(jsonConfig);
 app.use(routesConfig);
 app.use(errorConfig);
 useServer(app);
-
-console.log('worker is online');
+startWorkers();
 
 export default app;

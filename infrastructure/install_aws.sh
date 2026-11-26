@@ -1,11 +1,9 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+# Deprecated: worker host IaC moved from AWS to OCI Ampere Always Free.
+# Kept so old links do not break; use ../install.sh for Terraform and
+# create_virtual_machine/main.sh for OCI apply/destroy.
+set -euo pipefail
 
-echo "info. Updating system packages..."
-sudo apt-get update -y
-
-echo "info. Installing AWS CLI natively..."
-sudo apt-get install -y awscli
-
-echo "info. AWS CLI installed successfully!"
-aws --version
+echo "warn. install_aws.sh is deprecated — Alice worker IaC targets OCI, not AWS"
+echo "info. install Terraform with: $(dirname "$0")/install.sh"
+exit 1

@@ -256,6 +256,11 @@ function mockJiraApiFetch(options?: {
     if (path.startsWith('/api/github/repositories')) {
       return { repositories: githubRepos };
     }
+    if (path === '/api/github/app/install/start') {
+      return {
+        url: 'https://github.com/apps/alice-dev/installations/new',
+      };
+    }
     if (path === '/api/github/oauth/start') {
       return { url: 'https://github.com/login/oauth/authorize' };
     }
@@ -1427,7 +1432,7 @@ describe('ProjectForm Component', () => {
     expect(await screen.findByText('@octocat')).toBeInTheDocument();
     expect(screen.getByText('Connected')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /Switch Account/i })
+      screen.getByRole('button', { name: /Reconnect/i })
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /Disconnect/i })

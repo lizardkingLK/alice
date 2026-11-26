@@ -11,7 +11,7 @@ feed an in-app **workflow orchestrator** that can enqueue **agent tools**
 
 **Related:** [Projects README](./README.md),
 [JIRA_INTEGRATION.md](./JIRA_INTEGRATION.md) (shared crypto and popup UX),
-[WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md),
+[WORKER_STREAMER_AND_READER.md](../../architecture/WORKER_STREAMER_AND_READER.md),
 [INTEGRATION_SCOPES.md](../integrations/INTEGRATION_SCOPES.md),
 user guide [project-integrations.md](../../user-guide/projects/project-integrations.md)
 
@@ -55,14 +55,15 @@ flowchart TB
 
 ## Phased delivery (planned)
 
-| Phase | Deliverable                                                                                                              | Depends on          |
-| ----- | ------------------------------------------------------------------------------------------------------------------------ | ------------------- |
-| **0** | App registration checklist + env shape in docs (this section)                                                            | —                   |
-| **1** | Install UX + `installation_id` on `version_control_connections`; project bind via `vc_*`                                 | 0                   |
-| **2** | Signed webhooks → enqueue → worker sync for **PRs, commits, branches**                                                   | 1 + worker skeleton |
-| **3** | Normalized SC domain events + job kinds aligned with [WORKER_AND_STREAMER.md](../../architecture/WORKER_AND_STREAMER.md) | 2                   |
-| **4** | Workflow orchestrator MVP; agent tools (e.g. Cursor) with human-in-the-loop                                              | 3                   |
-| **5** | Migrate off user OAuth; optional write-back (checks/comments); Issues policy TBD                                         | 4                   |
+| Phase | Deliverable                                                                                                                            | Depends on          |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| **0** | App registration checklist + env shape in docs (this section)                                                                          | —                   |
+| **1** | Install UX + `installation_id` on `version_control_connections`; project bind via `vc_*`                                               | 0                   |
+| **2** | Signed webhooks → enqueue → worker sync for **PRs, commits, branches**                                                                 | 1 + worker skeleton |
+| **3** | Normalized SC domain events + job kinds aligned with [WORKER_STREAMER_AND_READER.md](../../architecture/WORKER_STREAMER_AND_READER.md) | 2                   |
+| **4** | Workflow orchestrator MVP; agent tools (e.g. Cursor) with human-in-the-loop                                                            | 3                   |
+| **5** | Migrate off user OAuth; optional write-back (checks/comments); Issues policy TBD                                                       | 4                   |
+| **6** | OCI worker host (A1 Always Free when available; AMD fallback OK); systemd + CI SSH                                                     | 2+ (ops last)       |
 
 ### Phase 0 — Foundations
 
@@ -104,19 +105,18 @@ or webhook handler required yet. Also covered in
 #### Env shape (`apps/api/.env`)
 
 ```dotenv
-# Phase 0+ GitHub App (install identity + webhooks)
+# GitHub App (install identity + webhooks)
 GITHUB_APP_ID="<numeric App ID>"
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
 GITHUB_APP_WEBHOOK_SECRET="<webhook secret from the App form>"
 
-# Shipped today — user OAuth App (keep until Phase 5)
-GITHUB_CLIENT_ID="..."
-GITHUB_CLIENT_SECRET="..."
-GITHUB_REDIRECT_URI="http://localhost:5000/api/github/oauth/callback"
+# BullMQ broker (Upstash Redis) — api produces, worker consumes
+REDIS_URL="rediss://default:...@....upstash.io:6379"
 ```
 
-Keys are listed in `apps/api/sample.env`. Runtime wiring of `GITHUB_APP_*` lands
-in Phase 1–2; storing them in Day One env is still the Phase 0 outcome.
+Keys are listed in `apps/api/sample.env`. User OAuth App
+(`GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` / `GITHUB_REDIRECT_URI`) is
+retired — omit from new env files; remove from deploy secrets if still present.
 
 #### Phase 0 done when
 
@@ -138,36 +138,123 @@ in Phase 1–2; storing them in Day One env is still the Phase 0 outcome.
   `projects.vc_external` (wire aliases `github_connection_id` / `github_repo`).
 - New connects prefer App; legacy user OAuth remains until Phase 5.
 
+**API (landed):** `GET /api/github/app/install/start` (auth) returns the GitHub
+install URL with HMAC `state`; `GET /api/github/app/callback` verifies `state`,
+loads the installation, mints an installation token, upserts
+`version_control_connections` with `auth_mode: app`. Set the GitHub App
+**Setup URL** to the API callback (`…/api/github/app/callback`) so install
+returns through Alice. Repo list uses `/installation/repositories` for App
+connections; OAuth path unchanged until Phase 5.
+
+**Web (landed):** **Connect GitHub** calls App install start (popup → GitHub →
+`/integrations/github/setup` → API callback → done page). Project bind uses
+`vc_*` / repo picker. Linked card shows **GitHub App** vs **OAuth** and
+**Reinstall App** / **Reconnect** as appropriate.
+
 ### Phase 2 — Webhook ingest + domain sync
 
-- Signed webhook endpoint on `apps/api` → verify → idempotent enqueue → **202**.
-- Worker job kinds upsert into `version_control_pull_requests` (and
-  commit/branch tables as designed).
-- Auto and/or manual link to Alice work items (branch naming / commit trailers
-  where possible). Manual PR link remains as fallback.
-- **Out of scope:** GitHub Issues → Alice work items (avoids dual ontology with
-  Jira import). Revisit as an explicit product choice later.
+**Ingest + PR / push / branch sync (landed):**
+
+- `POST /api/github/webhooks` — verify `X-Hub-Signature-256` against raw body,
+  idempotent BullMQ enqueue (`jobId = github-delivery-<X-GitHub-Delivery>`),
+  respond **202** `{ accepted, jobId, duplicate }`. Missing secret / `REDIS_URL`
+  → **503** (GitHub retries).
+- Shared `@repo/jobs`: `github.webhook.ingest`, `github.sync.pull_request`,
+  `github.sync.push`, `github.sync.branch`.
+- Worker fan-out:
+  - `pull_request` → refresh/auto-link `version_control_pull_requests`
+    (`work_item_id` still required; unresolved PRs skipped — manual link OK).
+  - `push` → upsert `version_control_branches` tip + `version_control_commits`
+    for bound projects (`project_id` required; optional `work_item_id`).
+  - `create` / `delete` (branch refs) → upsert/soft-delete
+    `version_control_branches`.
+- Set App **Webhook URL** to `https://<api-host>/api/github/webhooks` and the
+  same webhook secret as `GITHUB_APP_WEBHOOK_SECRET`. Set `REDIS_URL` on both
+  `api` and `worker`.
+
+**Auto-link conventions (case-insensitive):**
+
+| Pattern                  | Example                   |
+| ------------------------ | ------------------------- |
+| `{projectKey}-{slug}`    | `feature/ALICE-fix-login` |
+| `{projectKey}/{slug}`    | `ALICE/fix-login`         |
+| Work-item UUID in branch | `chore/<uuid>-tweaks`     |
+
+Scans PR title, branch name, and commit messages for the same forms.
+
+**Still open in Phase 2 (optional):**
+
+- Nullable `work_item_id` on PRs (synced-but-unlinked inventory).
+- Explicit commit-trailer parser beyond message substring match.
+- **Out of scope:** GitHub Issues → Alice work items.
 
 ### Phase 3 — Normalized SC events + worker bridge
 
-- Emit Alice domain events (e.g. `PullRequestOpened`, `PushReceived`, later
-  `ReviewCommentReceived`) as orchestrator inputs — not raw GitHub payloads.
-- Queue names / `job_runs` follow WORKER_AND_STREAMER; API never runs agent
-  loops or BullMQ `Worker` processes.
+**Landed:**
+
+- After successful sync, worker emits typed Alice SC domain events via
+  `@repo/jobs` (`emitScDomainEvent` + Zod discriminated union) — not raw
+  GitHub payloads. Types: `PullRequestOpened` / `Updated` / `Closed` /
+  `Merged`, `PushReceived`, `BranchCreated` / `Updated` / `Deleted`.
+- Emit enqueues `workflow.run` when `REDIS_URL` is passed; `job_runs` table
+  tracks product status (BullMQ remains operational only).
+- Later optional: `ReviewCommentReceived` when review-comment sync exists.
 
 ### Phase 4 — Workflow orchestrator + agent tools
 
-- In-app workflows subscribe to SC events; enqueue agent steps on `apps/worker`.
-- Cursor (and peers) live as **org agent integrations/tools** (Settings vault /
-  agent connectors), **not** columns on `version_control_connections`.
-- Default **human-in-the-loop** for “resolve from PR comment” and architecture
-  proposals; optional post-back to GitHub when write permissions exist.
+**MVP landed:**
+
+- Worker handles `workflow.run`: upserts `job_runs`, then parks at
+  `awaiting_human` (HITL stub — no agent tools yet).
+- Structured log `workflow.run.hitl_required`.
+
+**Still open in Phase 4:**
+
+- In-app workflow designer / approval UI; enqueue agent steps (e.g. Cursor) on
+  `apps/worker`.
+- Cursor (and peers) as **org agent integrations/tools** (Settings vault), not
+  columns on `version_control_connections`.
+- Optional post-back to GitHub when write permissions exist.
 
 ### Phase 5 — Migration + write-back
 
-- Migrate or require re-install off user OAuth App connections.
+**Landed (App-only new connects):**
+
+- `GET /api/github/oauth/start` returns **410** (`github_oauth_retired`); prefer
+  `/api/github/app/install/start`.
+- Web connect path already uses App install; `startGithubOAuth` redirects to
+  App install.
+- Legacy OAuth **callback** + existing `auth_mode: oauth` connections still work
+  until operators reinstall with the App.
+
+**Phase 5 env / rows:** oauth connection rows gone; `GITHUB_CLIENT_*` removed
+from `apps/api/sample.env` and `apps/api` `env.ts`. OAuth start/callback return
+**410**; token path is App install only.
+
+**Still open in Phase 5:**
+
 - Expand App permissions for checks / PR comments as workflows need.
-- Optional GitHub Issues policy (link vs import) as a separate decision.
+- Optional GitHub Issues policy (link vs import).
+
+### Phase 6 — Worker host (ops last)
+
+**Live host:** Oracle **Singapore** **AMD** VM (Console). Always Free Ampere
+(`VM.Standard.A1.Flex`) was **out of pool** in-region, so the VM is **not**
+Always Free–badged. **SSH works** — ready for runtime install.
+
+**IaC (landed sketch, A1-oriented):** Terraform HCL under
+`infrastructure/create_virtual_machine/` (provider `oracle/oci` `~> 9.0`),
+invoked by `main.sh` (`apply` / `destroy`). Prefer A1 2 OCPU / 12 GB when the
+home-region pool has capacity; otherwise keep a Console AMD (or other) VM.
+Install Terraform with `infrastructure/install.sh`. See
+`infrastructure/README.md`.
+
+**Still open in Phase 6:**
+
+- Runtime runbook on the SSH VM (Node/pnpm or image, env, systemd unit).
+- CI SSH deploy after GitHub Actions.
+- Product sync does not require this host in every environment — local/dev can
+  run the worker beside `api`.
 
 ### Locks
 
@@ -352,17 +439,19 @@ sequenceDiagram
 
 ## Source map
 
-| Step                  | Location                                                              |
-| --------------------- | --------------------------------------------------------------------- |
-| Popup open + navigate | `apps/web/app/projects/_hooks/use-oauth-popup-manager.ts`             |
-| Picker / refresh      | `apps/web/app/projects/_hooks/use-github-connection-picker.ts`        |
-| Client API helpers    | `apps/web/app/projects/_services/projects.github.mutations.client.ts` |
-| Done page             | `apps/web/app/integrations/github/done/page.tsx`                      |
-| Routes                | `apps/api/src/routes/api/github/github.route.ts` (`/api/github`)      |
-| OAuth + token logic   | `apps/api/src/routes/api/github/github.service.ts`                    |
-| Persistence           | `apps/api/src/routes/api/github/github.repository.ts`                 |
-| Signed `state`        | `apps/api/src/lib/secrets/oauth-state.ts`                             |
-| Encrypt / decrypt     | `apps/api/src/lib/secrets/token-crypto.ts`                            |
+| Step                    | Location                                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------------- |
+| Popup open + navigate   | `apps/web/app/projects/_hooks/use-oauth-popup-manager.ts`                                       |
+| Picker / refresh        | `apps/web/app/projects/_hooks/use-github-connection-picker.ts` (App install)                    |
+| Client API helpers      | `apps/web/app/projects/_services/projects.github.mutations.client.ts` (`startGithubAppInstall`) |
+| Setup URL landing       | `apps/web/app/integrations/github/setup/page.tsx`                                               |
+| Done page               | `apps/web/app/integrations/github/done/page.tsx`                                                |
+| Routes                  | `apps/api/src/routes/api/github/github.route.ts` (`/api/github`)                                |
+| OAuth + App install     | `apps/api/src/routes/api/github/github.service.ts`                                              |
+| App JWT + install token | `apps/api/src/routes/api/github/github-app-auth.ts`                                             |
+| Persistence             | `apps/api/src/routes/api/github/github.repository.ts`                                           |
+| Signed `state`          | `apps/api/src/lib/secrets/oauth-state.ts`                                                       |
+| Encrypt / decrypt       | `apps/api/src/lib/secrets/token-crypto.ts`                                                      |
 
 ---
 

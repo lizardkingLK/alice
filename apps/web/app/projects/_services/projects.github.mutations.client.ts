@@ -1,8 +1,5 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import type { GithubConnectionDto, GithubRepoOption } from '@repo/types/api/v1';
-
-export type { GithubConnectionDto, GithubRepoOption };
-
 import {
   getCachedGithubConnections,
   setCachedGithubConnections,
@@ -10,6 +7,8 @@ import {
   setCachedGithubRepositories,
   clearGithubCache,
 } from './github-connection-cache';
+
+export type { GithubConnectionDto, GithubRepoOption };
 
 export {
   getCachedGithubConnections,
@@ -33,9 +32,22 @@ export async function listGithubConnections(
   return data.connections;
 }
 
-export async function startGithubOAuth(): Promise<string> {
-  const data = await apiFetch<{ url: string }>('/api/github/oauth/start');
+async function startGithubAuthorizeUrl(path: string): Promise<string> {
+  const data = await apiFetch<{ url: string }>(path);
   return data.url;
+}
+
+/** Preferred connect path — GitHub App install (Phase 1). */
+export async function startGithubAppInstall(): Promise<string> {
+  return startGithubAuthorizeUrl('/api/github/app/install/start');
+}
+
+/**
+ * @deprecated Phase 5 — user OAuth start is retired (API returns 410).
+ * Prefer `startGithubAppInstall`.
+ */
+export async function startGithubOAuth(): Promise<string> {
+  return startGithubAppInstall();
 }
 
 export async function listGithubRepositories(

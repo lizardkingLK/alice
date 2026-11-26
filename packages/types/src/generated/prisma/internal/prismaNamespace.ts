@@ -435,6 +435,9 @@ export const ModelName = {
   charts: 'charts',
   chart_shares: 'chart_shares',
   version_control_pull_requests: 'version_control_pull_requests',
+  version_control_branches: 'version_control_branches',
+  version_control_commits: 'version_control_commits',
+  job_runs: 'job_runs',
   integrations: 'integrations',
   member_chat_model_preferences: 'member_chat_model_preferences',
   project_integration_bindings: 'project_integration_bindings'
@@ -453,7 +456,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "sprint_contribution_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "notification_email_events" | "notification_email_preferences" | "email_outbox" | "weekly_project_report_subscriptions" | "weekly_project_reports" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "integrations" | "member_chat_model_preferences" | "project_integration_bindings"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_links" | "activities" | "sprint_burndown_rollups" | "sprint_contribution_rollups" | "work_item_chart_rollups" | "work_item_chart_hierarchy_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "notification_email_events" | "notification_email_preferences" | "email_outbox" | "weekly_project_report_subscriptions" | "weekly_project_reports" | "access_allowlist" | "access_requests" | "project_management_connections" | "version_control_connections" | "chat_conversations" | "chat_attachments" | "chat_tools" | "chat_skills" | "chat_agents" | "chat_agent_tools" | "chat_agent_skills" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "version_control_pull_requests" | "version_control_branches" | "version_control_commits" | "job_runs" | "integrations" | "member_chat_model_preferences" | "project_integration_bindings"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -3269,6 +3272,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    version_control_branches: {
+      payload: Prisma.$version_control_branchesPayload<ExtArgs>
+      fields: Prisma.version_control_branchesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.version_control_branchesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_branchesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.version_control_branchesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_branchesPayload>
+        }
+        findFirst: {
+          args: Prisma.version_control_branchesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_branchesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.version_control_branchesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_branchesPayload>
+        }
+        findMany: {
+          args: Prisma.version_control_branchesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_branchesPayload>[]
+        }
+        create: {
+          args: Prisma.version_control_branchesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_branchesPayload>
+        }
+        createMany: {
+          args: Prisma.version_control_branchesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.version_control_branchesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_branchesPayload>[]
+        }
+        delete: {
+          args: Prisma.version_control_branchesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_branchesPayload>
+        }
+        update: {
+          args: Prisma.version_control_branchesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_branchesPayload>
+        }
+        deleteMany: {
+          args: Prisma.version_control_branchesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.version_control_branchesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.version_control_branchesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_branchesPayload>[]
+        }
+        upsert: {
+          args: Prisma.version_control_branchesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_branchesPayload>
+        }
+        aggregate: {
+          args: Prisma.Version_control_branchesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateVersion_control_branches>
+        }
+        groupBy: {
+          args: Prisma.version_control_branchesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Version_control_branchesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.version_control_branchesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Version_control_branchesCountAggregateOutputType> | number
+        }
+      }
+    }
+    version_control_commits: {
+      payload: Prisma.$version_control_commitsPayload<ExtArgs>
+      fields: Prisma.version_control_commitsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.version_control_commitsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_commitsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.version_control_commitsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_commitsPayload>
+        }
+        findFirst: {
+          args: Prisma.version_control_commitsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_commitsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.version_control_commitsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_commitsPayload>
+        }
+        findMany: {
+          args: Prisma.version_control_commitsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_commitsPayload>[]
+        }
+        create: {
+          args: Prisma.version_control_commitsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_commitsPayload>
+        }
+        createMany: {
+          args: Prisma.version_control_commitsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.version_control_commitsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_commitsPayload>[]
+        }
+        delete: {
+          args: Prisma.version_control_commitsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_commitsPayload>
+        }
+        update: {
+          args: Prisma.version_control_commitsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_commitsPayload>
+        }
+        deleteMany: {
+          args: Prisma.version_control_commitsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.version_control_commitsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.version_control_commitsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_commitsPayload>[]
+        }
+        upsert: {
+          args: Prisma.version_control_commitsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$version_control_commitsPayload>
+        }
+        aggregate: {
+          args: Prisma.Version_control_commitsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateVersion_control_commits>
+        }
+        groupBy: {
+          args: Prisma.version_control_commitsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Version_control_commitsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.version_control_commitsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Version_control_commitsCountAggregateOutputType> | number
+        }
+      }
+    }
+    job_runs: {
+      payload: Prisma.$job_runsPayload<ExtArgs>
+      fields: Prisma.job_runsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.job_runsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$job_runsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.job_runsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$job_runsPayload>
+        }
+        findFirst: {
+          args: Prisma.job_runsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$job_runsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.job_runsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$job_runsPayload>
+        }
+        findMany: {
+          args: Prisma.job_runsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$job_runsPayload>[]
+        }
+        create: {
+          args: Prisma.job_runsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$job_runsPayload>
+        }
+        createMany: {
+          args: Prisma.job_runsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.job_runsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$job_runsPayload>[]
+        }
+        delete: {
+          args: Prisma.job_runsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$job_runsPayload>
+        }
+        update: {
+          args: Prisma.job_runsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$job_runsPayload>
+        }
+        deleteMany: {
+          args: Prisma.job_runsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.job_runsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.job_runsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$job_runsPayload>[]
+        }
+        upsert: {
+          args: Prisma.job_runsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$job_runsPayload>
+        }
+        aggregate: {
+          args: Prisma.Job_runsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateJob_runs>
+        }
+        groupBy: {
+          args: Prisma.job_runsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Job_runsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.job_runsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Job_runsCountAggregateOutputType> | number
+        }
+      }
+    }
     integrations: {
       payload: Prisma.$integrationsPayload<ExtArgs>
       fields: Prisma.integrationsFieldRefs
@@ -4190,6 +4415,66 @@ export const Version_control_pull_requestsScalarFieldEnum = {
 export type Version_control_pull_requestsScalarFieldEnum = (typeof Version_control_pull_requestsScalarFieldEnum)[keyof typeof Version_control_pull_requestsScalarFieldEnum]
 
 
+export const Version_control_branchesScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  work_item_id: 'work_item_id',
+  vendor: 'vendor',
+  repo_owner: 'repo_owner',
+  repo_name: 'repo_name',
+  name: 'name',
+  head_sha: 'head_sha',
+  deleted_at: 'deleted_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Version_control_branchesScalarFieldEnum = (typeof Version_control_branchesScalarFieldEnum)[keyof typeof Version_control_branchesScalarFieldEnum]
+
+
+export const Version_control_commitsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  work_item_id: 'work_item_id',
+  vendor: 'vendor',
+  repo_owner: 'repo_owner',
+  repo_name: 'repo_name',
+  sha: 'sha',
+  message: 'message',
+  author_login: 'author_login',
+  author_name: 'author_name',
+  author_email: 'author_email',
+  committed_at: 'committed_at',
+  html_url: 'html_url',
+  branch_name: 'branch_name',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Version_control_commitsScalarFieldEnum = (typeof Version_control_commitsScalarFieldEnum)[keyof typeof Version_control_commitsScalarFieldEnum]
+
+
+export const Job_runsScalarFieldEnum = {
+  id: 'id',
+  parent_id: 'parent_id',
+  kind: 'kind',
+  status: 'status',
+  bullmq_job_id: 'bullmq_job_id',
+  event_id: 'event_id',
+  event_type: 'event_type',
+  delivery_id: 'delivery_id',
+  project_id: 'project_id',
+  payload: 'payload',
+  error: 'error',
+  started_at: 'started_at',
+  finished_at: 'finished_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Job_runsScalarFieldEnum = (typeof Job_runsScalarFieldEnum)[keyof typeof Job_runsScalarFieldEnum]
+
+
 export const IntegrationsScalarFieldEnum = {
   id: 'id',
   catalog_id: 'catalog_id',
@@ -4904,6 +5189,9 @@ export type GlobalOmitConfig = {
   charts?: Prisma.chartsOmit
   chart_shares?: Prisma.chart_sharesOmit
   version_control_pull_requests?: Prisma.version_control_pull_requestsOmit
+  version_control_branches?: Prisma.version_control_branchesOmit
+  version_control_commits?: Prisma.version_control_commitsOmit
+  job_runs?: Prisma.job_runsOmit
   integrations?: Prisma.integrationsOmit
   member_chat_model_preferences?: Prisma.member_chat_model_preferencesOmit
   project_integration_bindings?: Prisma.project_integration_bindingsOmit

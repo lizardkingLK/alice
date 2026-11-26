@@ -1,0 +1,37 @@
+{
+  "name": "@repo/jobs",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf .turbo node_modules/.cache/turbo dist",
+    "lint": "eslint . --max-warnings 0",
+    "checktypes": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "bullmq": "^5.66.5",
+    "ioredis": "^5.9.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^20.19.43",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "typescript": "5.9.2",
+    "vitest": "^4.1.9"
+  }
+}

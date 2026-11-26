@@ -1,4 +1,3 @@
-import { env } from '../../../config/env';
 import {
   decryptSecret,
   encryptSecret,
@@ -11,8 +10,12 @@ import { VersionControlConnectionStatus } from '@repo/types/prisma';
 import {
   UserRoleEnum,
   utcNow,
+  GithubAuthModeEnum,
+  GithubAccountTypeEnum,
   buildGithubProviderConfig,
   tryParseGithubProviderConfig,
+  type GithubAccountType,
+  type GithubProviderConfig,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import type {
@@ -21,20 +24,24 @@ import type {
   VcConnectionPublic,
 } from './github.repository';
 import {
+  createInstallationAccessToken,
+  fetchGithubAppMetadata,
+  fetchGithubInstallation,
+  requireGithubAppConfig,
+} from './github-app-auth';
+import {
   GithubConnectionStatusEnum,
-  GithubInsufficientScopeError,
   GithubReauthorizationRequiredError,
   type GithubApiRepoResponse,
   type GithubConnectionDto,
+  type GithubInstallationRepositoriesResponse,
   type GithubRepoOption,
-  type GithubTokenResponse,
-  type GithubUserResponse,
 } from './github.types';
 
-const OAUTH_SCOPES = 'repo read:user';
+const APP_INSTALLATION_SCOPES = 'github_app:installation';
 const ACCESS_TOKEN_SKEW_MS = 60 * 1000;
 const GITHUB_API_URL = 'https://api.github.com';
-const GITHUB_OAUTH_URL = 'https://github.com/login/oauth';
+const GITHUB_APP_INSTALL_STATE_PURPOSE = 'sign GitHub App install state (HMAC)';
 
 async function requireGithubManager(actorId: string) {
   return await requireUserWithRole(
@@ -44,100 +51,68 @@ async function requireGithubManager(actorId: string) {
   );
 }
 
-function requireGithubConfig(): {
-  clientId: string;
-  clientSecret: string;
-  redirectUri: string;
-} {
-  const clientId = env.GITHUB_CLIENT_ID;
-  const clientSecret = env.GITHUB_CLIENT_SECRET;
-  const redirectUri = env.GITHUB_REDIRECT_URI;
-  if (!clientId || !clientSecret || !redirectUri) {
-    throw new Error(
-      'GitHub OAuth is not configured. Set GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, and GITHUB_REDIRECT_URI.'
-    );
-  }
-  return { clientId, clientSecret, redirectUri };
-}
-
 export class GithubService {
   constructor(private readonly githubRepository: GithubRepository) {}
 
-  buildAuthorizeUrl(userId: string): string {
-    const { clientId, redirectUri } = requireGithubConfig();
-    const state = createOAuthState(userId, 'sign GitHub OAuth state (HMAC)');
-
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      scope: OAUTH_SCOPES,
-      state,
-      prompt: 'select_account',
-    });
-
-    return `${GITHUB_OAUTH_URL}/authorize?${params.toString()}`;
+  buildAppInstallUrl(userId: string, appSlug: string): string {
+    requireGithubAppConfig();
+    const state = createOAuthState(userId, GITHUB_APP_INSTALL_STATE_PURPOSE);
+    const params = new URLSearchParams({ state });
+    return `https://github.com/apps/${encodeURIComponent(appSlug)}/installations/new?${params.toString()}`;
   }
 
-  async startOAuth(actorId: string): Promise<{ url: string }> {
+  async startAppInstall(actorId: string): Promise<{ url: string }> {
     await requireGithubManager(actorId);
-
-    const activeAdminConn =
-      await this.githubRepository.findActiveAdminConnection();
-    if (
-      activeAdminConn?.user_id != null &&
-      activeAdminConn.user_id !== actorId
-    ) {
-      throw new Error(
-        'An administrator has connected GitHub. That administrator must disconnect the existing connection before a different account can be connected.'
-      );
+    await this.assertCanEstablishConnection(actorId);
+    const app = await fetchGithubAppMetadata();
+    if (!app.slug) {
+      throw new Error('GitHub App metadata did not include a slug.');
     }
-
-    return { url: this.buildAuthorizeUrl(actorId) };
+    return { url: this.buildAppInstallUrl(actorId, app.slug) };
   }
 
-  async handleOAuthCallback(
-    code: string,
+  async handleAppInstallCallback(
+    installationIdRaw: string,
     state: string
   ): Promise<GithubConnectionDto> {
     const { userId } = verifyOAuthState(
       state,
-      'sign GitHub OAuth state (HMAC)'
+      GITHUB_APP_INSTALL_STATE_PURPOSE
     );
     const actor = await requireGithubManager(userId);
+    await this.assertCanEstablishConnection(userId);
 
-    const activeAdminConn =
-      await this.githubRepository.findActiveAdminConnection();
-    if (
-      activeAdminConn?.user_id != null &&
-      activeAdminConn.user_id !== userId
-    ) {
-      throw new Error(
-        'An administrator has connected GitHub. That administrator must disconnect the existing connection before a different account can be connected.'
-      );
+    const installationId = Number(installationIdRaw);
+    if (!Number.isInteger(installationId) || installationId <= 0) {
+      throw new Error('Invalid GitHub App installation_id.');
     }
 
-    const tokens = await this.exchangeAuthorizationCode(code);
-    const userInfo = await this.fetchUserProfile(tokens.access_token);
+    const installation = await fetchGithubInstallation(installationId);
+    const account = installation.account;
+    if (!account?.login) {
+      throw new Error('GitHub App installation is missing account metadata.');
+    }
 
-    const expiresAt = tokens.expires_in
-      ? new Date(utcNow().getTime() + tokens.expires_in * 1000)
-      : null;
+    const accountType = this.parseAccountType(account.type);
+    const minted = await createInstallationAccessToken(installationId);
+    const expiresAt = new Date(minted.expires_at);
 
     const row = await this.githubRepository.upsertConnection({
       userId,
-      externalId: String(userInfo.id),
-      displayLabel: `GitHub (@${userInfo.login})`,
+      externalId: String(installationId),
+      displayLabel: `GitHub App (@${account.login})`,
       providerConfig: buildGithubProviderConfig({
-        account_login: userInfo.login,
-        account_name: userInfo.name ?? null,
-        account_avatar_url: userInfo.avatar_url ?? null,
+        auth_mode: GithubAuthModeEnum.app,
+        account_login: account.login,
+        account_name: account.name ?? null,
+        account_avatar_url: account.avatar_url ?? null,
+        account_type: accountType,
+        installation_id: installationId,
       }),
-      refreshTokenEnc: tokens.refresh_token
-        ? encryptSecret(tokens.refresh_token)
-        : '',
-      accessTokenEnc: encryptSecret(tokens.access_token),
+      refreshTokenEnc: '',
+      accessTokenEnc: encryptSecret(minted.token),
       accessTokenExpiresAt: expiresAt,
-      scopes: tokens.scope ?? OAUTH_SCOPES,
+      scopes: APP_INSTALLATION_SCOPES,
       status: VersionControlConnectionStatus.active,
     });
 
@@ -198,40 +173,14 @@ export class GithubService {
       );
     }
 
-    if (!connection.access_token_enc) {
+    const config = tryParseGithubProviderConfig(connection.provider_config);
+    if (config?.auth_mode !== GithubAuthModeEnum.app) {
       throw new GithubReauthorizationRequiredError(
-        'GitHub access token is missing. Please reconnect GitHub.'
+        'GitHub user OAuth is retired. Install the GitHub App to continue.'
       );
     }
 
-    if (!this.hasRequiredScopes(connection.scopes)) {
-      throw new GithubInsufficientScopeError(
-        'GitHub connection has insufficient permissions. Reconnecting with required scopes is needed.'
-      );
-    }
-
-    const expiresAt = connection.access_token_expires_at
-      ? connection.access_token_expires_at.getTime()
-      : null;
-    const isExpired =
-      expiresAt !== null &&
-      expiresAt <= utcNow().getTime() + ACCESS_TOKEN_SKEW_MS;
-
-    if (!isExpired) {
-      return decryptSecret(connection.access_token_enc);
-    }
-
-    if (!connection.refresh_token_enc) {
-      await this.githubRepository.updateStatus(
-        connection.id,
-        VersionControlConnectionStatus.expired
-      );
-      throw new GithubReauthorizationRequiredError(
-        'GitHub access token has expired and no refresh token is available. Please reconnect GitHub.'
-      );
-    }
-
-    return await this.refreshAccessToken(connection);
+    return await this.getValidInstallationToken(connection, config);
   }
 
   async listRepositories(
@@ -239,14 +188,15 @@ export class GithubService {
     connectionId?: string
   ): Promise<GithubRepoOption[]> {
     await requireGithubManager(actorId);
+
     const accessToken = await this.getValidAccessToken(connectionId);
 
     const response = await fetch(
-      `${GITHUB_API_URL}/user/repos?per_page=100&sort=updated`,
+      `${GITHUB_API_URL}/installation/repositories?per_page=100`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          Accept: 'application/vnd.github.v3+json',
+          Accept: 'application/vnd.github+json',
           'User-Agent': 'Alice-App',
         },
       }
@@ -264,8 +214,38 @@ export class GithubService {
       );
     }
 
-    const data = (await response.json()) as GithubApiRepoResponse[];
-    return data.map((repo) => ({
+    const payload =
+      (await response.json()) as GithubInstallationRepositoriesResponse;
+    return (payload.repositories ?? []).map((repo) => this.mapApiRepo(repo));
+  }
+
+  private async assertCanEstablishConnection(actorId: string): Promise<void> {
+    const activeAdminConn =
+      await this.githubRepository.findActiveAdminConnection();
+    if (
+      activeAdminConn?.user_id != null &&
+      activeAdminConn.user_id !== actorId
+    ) {
+      throw new Error(
+        'An administrator has connected GitHub. That administrator must disconnect the existing connection before a different account can be connected.'
+      );
+    }
+  }
+
+  private parseAccountType(
+    value: string | null | undefined
+  ): GithubAccountType | null {
+    if (value === GithubAccountTypeEnum.User) {
+      return GithubAccountTypeEnum.User;
+    }
+    if (value === GithubAccountTypeEnum.Organization) {
+      return GithubAccountTypeEnum.Organization;
+    }
+    return null;
+  }
+
+  private mapApiRepo(repo: GithubApiRepoResponse): GithubRepoOption {
+    return {
       id: repo.id,
       name: repo.name,
       full_name: repo.full_name,
@@ -277,137 +257,52 @@ export class GithubService {
       html_url: repo.html_url,
       default_branch: repo.default_branch,
       description: repo.description,
-    }));
+    };
   }
 
-  private hasRequiredScopes(grantedScope?: string): boolean {
-    if (!grantedScope) {
-      return true;
-    }
-    const scopes = new Set(
-      grantedScope
-        .split(/[,\s]+/)
-        .map((s) => s.trim())
-        .filter(Boolean)
-    );
-    return scopes.has('repo') || scopes.has('public_repo');
-  }
-
-  private async refreshAccessToken(
-    connection: VcConnectionFull
+  private async getValidInstallationToken(
+    connection: VcConnectionFull,
+    config: GithubProviderConfig
   ): Promise<string> {
-    const { clientId, clientSecret } = requireGithubConfig();
-    const refreshToken = decryptSecret(connection.refresh_token_enc);
+    const installationId = config.installation_id;
+    if (installationId == null) {
+      throw new GithubReauthorizationRequiredError(
+        'GitHub App installation_id is missing. Please reinstall the GitHub App.'
+      );
+    }
 
-    const response = await fetch(`${GITHUB_OAUTH_URL}/access_token`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: clientId,
-        client_secret: clientSecret,
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-      }),
-    });
+    const expiresAt = connection.access_token_expires_at
+      ? connection.access_token_expires_at.getTime()
+      : null;
+    const isExpired =
+      expiresAt === null ||
+      expiresAt <= utcNow().getTime() + ACCESS_TOKEN_SKEW_MS;
 
-    if (!response.ok) {
+    if (!isExpired && connection.access_token_enc) {
+      return decryptSecret(connection.access_token_enc);
+    }
+
+    try {
+      const minted = await createInstallationAccessToken(installationId);
+      const nextExpiresAt = new Date(minted.expires_at);
+      await this.githubRepository.updateTokens(connection.id, {
+        accessTokenEnc: encryptSecret(minted.token),
+        refreshTokenEnc: '',
+        accessTokenExpiresAt: nextExpiresAt,
+        scopes: APP_INSTALLATION_SCOPES,
+      });
+      return minted.token;
+    } catch (error) {
       await this.githubRepository.updateStatus(
         connection.id,
         VersionControlConnectionStatus.expired
       );
-      const errorText = await response.text();
+      const detail =
+        error instanceof Error ? error.message : 'Unknown minting error';
       throw new GithubReauthorizationRequiredError(
-        `Failed to refresh GitHub access token (${response.status}): ${errorText}`
+        `Failed to mint GitHub App installation token. Reinstall the GitHub App. (${detail})`
       );
     }
-
-    const data = (await response.json()) as GithubTokenResponse;
-    if (data.error) {
-      await this.githubRepository.updateStatus(
-        connection.id,
-        VersionControlConnectionStatus.expired
-      );
-      throw new GithubReauthorizationRequiredError(
-        `GitHub token refresh failed: ${data.error_description || data.error}`
-      );
-    }
-
-    const expiresAt = data.expires_in
-      ? new Date(utcNow().getTime() + data.expires_in * 1000)
-      : connection.access_token_expires_at;
-
-    const nextRefreshToken = data.refresh_token
-      ? encryptSecret(data.refresh_token)
-      : connection.refresh_token_enc;
-
-    await this.githubRepository.updateTokens(connection.id, {
-      accessTokenEnc: encryptSecret(data.access_token),
-      refreshTokenEnc: nextRefreshToken,
-      accessTokenExpiresAt: expiresAt,
-      scopes: data.scope ?? connection.scopes,
-    });
-
-    return data.access_token;
-  }
-
-  private async exchangeAuthorizationCode(
-    code: string
-  ): Promise<GithubTokenResponse> {
-    const { clientId, clientSecret, redirectUri } = requireGithubConfig();
-
-    const response = await fetch(`${GITHUB_OAUTH_URL}/access_token`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code,
-        redirect_uri: redirectUri,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `GitHub token exchange failed (${response.status}): ${errorText}`
-      );
-    }
-
-    const data = (await response.json()) as GithubTokenResponse;
-    if (data.error) {
-      throw new Error(
-        `GitHub authorization error: ${data.error_description || data.error}`
-      );
-    }
-
-    return data;
-  }
-
-  private async fetchUserProfile(
-    accessToken: string
-  ): Promise<GithubUserResponse> {
-    const response = await fetch(`${GITHUB_API_URL}/user`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: 'application/vnd.github.v3+json',
-        'User-Agent': 'Alice-App',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Failed to fetch GitHub user profile (${response.status}): ${errorText}`
-      );
-    }
-
-    return (await response.json()) as GithubUserResponse;
   }
 
   private toConnectionDto(
@@ -437,10 +332,13 @@ export class GithubService {
         row.status === VersionControlConnectionStatus.active
           ? GithubConnectionStatusEnum.active
           : GithubConnectionStatusEnum.revoked,
+      auth_mode: config?.auth_mode ?? GithubAuthModeEnum.app,
       account_login: config?.account_login || 'unknown',
       account_id: row.external_id,
       account_name: config?.account_name ?? undefined,
       account_avatar_url: config?.account_avatar_url ?? undefined,
+      account_type: config?.account_type ?? null,
+      installation_id: config?.installation_id ?? null,
       scope: row.scopes,
       expires_at: expiresAt,
       has_access_token: hasTokenFields

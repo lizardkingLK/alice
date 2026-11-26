@@ -384,7 +384,7 @@ Cross-cutting pagination support is built via:
 
 **Planned long-lived apps (not deployed yet)**
 
-- `apps/worker` / `apps/streamer` on Render (BullMQ + Upstash Redis; separate processes) — see [WORKER_AND_STREAMER.md](./WORKER_AND_STREAMER.md)
+- `apps/worker` / `apps/streamer` / later `apps/reader` (BullMQ + Upstash Redis; separate processes; self-host worker first) — see [WORKER_STREAMER_AND_READER.md](./WORKER_STREAMER_AND_READER.md)
 
 **Serverless constraints**
 

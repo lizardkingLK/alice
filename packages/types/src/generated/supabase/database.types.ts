@@ -1793,6 +1793,197 @@ export type Database = {
           },
         ]
       }
+      job_runs: {
+        Row: {
+          bullmq_job_id: string | null
+          created_at: string
+          delivery_id: string | null
+          error: string | null
+          event_id: string | null
+          event_type: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          parent_id: string | null
+          payload: Json
+          project_id: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bullmq_job_id?: string | null
+          created_at?: string
+          delivery_id?: string | null
+          error?: string | null
+          event_id?: string | null
+          event_type?: string | null
+          finished_at?: string | null
+          id?: string
+          kind: string
+          parent_id?: string | null
+          payload?: Json
+          project_id?: string | null
+          started_at?: string | null
+          status: string
+          updated_at: string
+        }
+        Update: {
+          bullmq_job_id?: string | null
+          created_at?: string
+          delivery_id?: string | null
+          error?: string | null
+          event_id?: string | null
+          event_type?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          parent_id?: string | null
+          payload?: Json
+          project_id?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_runs_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "job_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      version_control_branches: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          head_sha: string | null
+          id: string
+          name: string
+          project_id: string
+          repo_name: string
+          repo_owner: string
+          updated_at: string
+          vendor: Database["public"]["Enums"]["VersionControlVendor"]
+          work_item_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          head_sha?: string | null
+          id?: string
+          name: string
+          project_id: string
+          repo_name: string
+          repo_owner: string
+          updated_at: string
+          vendor?: Database["public"]["Enums"]["VersionControlVendor"]
+          work_item_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          head_sha?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          repo_name?: string
+          repo_owner?: string
+          updated_at?: string
+          vendor?: Database["public"]["Enums"]["VersionControlVendor"]
+          work_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "version_control_branches_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "version_control_branches_work_item_id_fkey"
+            columns: ["work_item_id"]
+            isOneToOne: false
+            referencedRelation: "work_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      version_control_commits: {
+        Row: {
+          author_email: string | null
+          author_login: string | null
+          author_name: string | null
+          branch_name: string | null
+          committed_at: string | null
+          created_at: string
+          html_url: string | null
+          id: string
+          message: string | null
+          project_id: string
+          repo_name: string
+          repo_owner: string
+          sha: string
+          updated_at: string
+          vendor: Database["public"]["Enums"]["VersionControlVendor"]
+          work_item_id: string | null
+        }
+        Insert: {
+          author_email?: string | null
+          author_login?: string | null
+          author_name?: string | null
+          branch_name?: string | null
+          committed_at?: string | null
+          created_at?: string
+          html_url?: string | null
+          id?: string
+          message?: string | null
+          project_id: string
+          repo_name: string
+          repo_owner: string
+          sha: string
+          updated_at: string
+          vendor?: Database["public"]["Enums"]["VersionControlVendor"]
+          work_item_id?: string | null
+        }
+        Update: {
+          author_email?: string | null
+          author_login?: string | null
+          author_name?: string | null
+          branch_name?: string | null
+          committed_at?: string | null
+          created_at?: string
+          html_url?: string | null
+          id?: string
+          message?: string | null
+          project_id?: string
+          repo_name?: string
+          repo_owner?: string
+          sha?: string
+          updated_at?: string
+          vendor?: Database["public"]["Enums"]["VersionControlVendor"]
+          work_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "version_control_commits_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "version_control_commits_work_item_id_fkey"
+            columns: ["work_item_id"]
+            isOneToOne: false
+            referencedRelation: "work_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       version_control_pull_requests: {
         Row: {
           branch_name: string | null

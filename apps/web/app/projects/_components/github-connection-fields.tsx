@@ -94,6 +94,82 @@ type GithubLinkedCardProps = {
   canManage?: boolean;
 };
 
+function resolveGithubReconnectCopy(authMode: string | undefined): {
+  modeBadge: string;
+  label: string;
+  title: string;
+} {
+  if (authMode === 'app') {
+    return {
+      modeBadge: 'GitHub App',
+      label: 'Reinstall App',
+      title: 'Reinstall or change the GitHub App installation',
+    };
+  }
+  return {
+    modeBadge: 'OAuth',
+    label: 'Reconnect',
+    title: 'Reconnect with a different GitHub account',
+  };
+}
+
+function GithubLinkedActions({
+  connectionId,
+  isConnecting,
+  isDisconnecting,
+  reconnectLabel,
+  reconnectTitle,
+  onConnect,
+  onDisconnect,
+}: Readonly<{
+  connectionId: string;
+  isConnecting: boolean;
+  isDisconnecting: boolean;
+  reconnectLabel: string;
+  reconnectTitle: string;
+  onConnect: () => void;
+  // eslint-disable-next-line no-unused-vars
+  onDisconnect?: (connectionId: string) => void;
+}>) {
+  return (
+    <div className="flex items-center gap-2">
+      {onDisconnect ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => onDisconnect(connectionId)}
+          disabled={isDisconnecting}
+          className="h-8 px-2 text-xs"
+        >
+          {isDisconnecting ? (
+            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Unplug className="mr-1 h-3.5 w-3.5" />
+          )}
+          Disconnect
+        </Button>
+      ) : null}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onConnect}
+        disabled={isConnecting}
+        className="h-8 px-2 text-xs"
+        title={reconnectTitle}
+      >
+        {isConnecting ? (
+          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <RefreshCw className="mr-1 h-3.5 w-3.5" />
+        )}
+        {reconnectLabel}
+      </Button>
+    </div>
+  );
+}
+
 function GithubLinkedCard({
   activeConnection,
   isConnecting,
@@ -118,6 +194,11 @@ function GithubLinkedCard({
   const isRestrictedAdminOwned =
     activeConnection.is_admin_owned && !activeConnection.can_manage;
   const isManageable = canManage && !isRestrictedAdminOwned;
+  const {
+    modeBadge,
+    label: reconnectLabel,
+    title: reconnectTitle,
+  } = resolveGithubReconnectCopy(activeConnection.auth_mode);
 
   return (
     <div className="border-border/60 bg-muted/20 space-y-3 rounded-lg border p-3">
@@ -133,7 +214,7 @@ function GithubLinkedCard({
             <AvatarFallback>{fallbackLetters}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 leading-tight">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="truncate text-sm font-semibold">
                 {accountLabel}
               </span>
@@ -144,6 +225,12 @@ function GithubLinkedCard({
                 <CheckCircle2 className="mr-1 h-2.5 w-2.5" />
                 Connected
               </Badge>
+              <Badge
+                variant="outline"
+                className="text-muted-foreground h-4 px-1.5 text-[10px] font-medium"
+              >
+                {modeBadge}
+              </Badge>
             </div>
             <p className="text-muted-foreground truncate text-[11px]">
               {activeConnection.name}
@@ -152,41 +239,15 @@ function GithubLinkedCard({
         </div>
 
         {showConnectChrome && isManageable ? (
-          <div className="flex items-center gap-2">
-            {onDisconnect ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => onDisconnect(activeConnection.id)}
-                disabled={isDisconnecting}
-                className="h-8 px-2 text-xs"
-              >
-                {isDisconnecting ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Unplug className="mr-1 h-3.5 w-3.5" />
-                )}
-                Disconnect
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onConnect}
-              disabled={isConnecting}
-              className="h-8 px-2 text-xs"
-              title="Switch account or reconnect"
-            >
-              {isConnecting ? (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-1 h-3.5 w-3.5" />
-              )}
-              Switch Account
-            </Button>
-          </div>
+          <GithubLinkedActions
+            connectionId={activeConnection.id}
+            isConnecting={isConnecting}
+            isDisconnecting={isDisconnecting}
+            reconnectLabel={reconnectLabel}
+            reconnectTitle={reconnectTitle}
+            onConnect={onConnect}
+            onDisconnect={onDisconnect}
+          />
         ) : null}
       </div>
 
@@ -350,7 +411,7 @@ export function GithubConnectionFields({
   setGithubRepoName,
   onDisconnect,
   isDisconnecting = false,
-  emptyHint = 'Authorize GitHub once to link repositories, pull requests, and commit activity.',
+  emptyHint = 'Install the Alice GitHub App once to link repositories, pull requests, and commit activity.',
   footerHint,
   showConnectChrome = true,
   canManage = true,
@@ -385,7 +446,7 @@ export function GithubConnectionFields({
 
   return (
     <div className="space-y-4">
-      {/* OAuth Connection Status & Identity Card */}
+      {/* Connection status & identity */}
       <GithubConnectionStatusCard
         isLoading={isLoadingConnections}
         activeConnection={activeConnection}

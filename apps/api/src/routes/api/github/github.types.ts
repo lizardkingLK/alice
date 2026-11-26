@@ -1,4 +1,13 @@
-import type { GithubRepoOption } from '@repo/types/api/v1';
+import {
+  GithubConnectionStatusEnum,
+  type GithubConnectionDto,
+  type GithubConnectionStatus,
+  type GithubRepoOption,
+  type GithubRepoOwner,
+  type GithubRepositoriesResponse,
+  type GithubConnectionsResponse,
+  type GithubOAuthStartResponse,
+} from '@repo/types/api/v1';
 
 export {
   GithubConnectionStatusEnum,
@@ -9,7 +18,7 @@ export {
   type GithubRepositoriesResponse,
   type GithubConnectionsResponse,
   type GithubOAuthStartResponse,
-} from '@repo/types/api/v1';
+};
 
 export class GithubReauthorizationRequiredError extends Error {
   readonly code = 'GITHUB_REAUTHORIZATION_REQUIRED' as const;
@@ -46,6 +55,41 @@ export interface GithubUserResponse {
   login: string;
   name?: string | null;
   avatar_url?: string | null;
+}
+
+export interface GithubAppMetadataResponse {
+  id: number;
+  slug: string;
+  name?: string;
+  html_url?: string;
+}
+
+export interface GithubInstallationAccount {
+  id: number;
+  login: string;
+  avatar_url?: string | null;
+  type: 'User' | 'Organization';
+  name?: string | null;
+}
+
+export interface GithubInstallationResponse {
+  id: number;
+  account: GithubInstallationAccount | null;
+  app_id?: number;
+  target_type?: string | null;
+  permissions?: Record<string, string>;
+}
+
+export interface GithubInstallationAccessTokenResponse {
+  token: string;
+  expires_at: string;
+  permissions?: Record<string, string>;
+  repository_selection?: string;
+}
+
+export interface GithubInstallationRepositoriesResponse {
+  total_count: number;
+  repositories: GithubApiRepoResponse[];
 }
 
 export interface GithubApiRepoResponse {

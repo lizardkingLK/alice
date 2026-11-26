@@ -9,7 +9,7 @@ widgets replace them.
 | Document                                         | Description                                                                                                  | Status |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ------ |
 | [CHARTS.md](./CHARTS.md)                         | `/charts` boards + planned Overview slider, descriptions, fork, mockOverview escape hatch                    | Living |
-| [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md) | Categorical + burndown rollups, series APIs; burndown widget steps; nested open questions; Tier 2–3 scaling  | Living |
+| [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md) | Categorical + burndown + hierarchy rollups, series APIs; Tier 1 product (Tier 2–3 → architecture doc)        | Living |
 | —                                                | Productivity **Notes** widget → [notes feature](../notes/README.md)                                          | Living |
 | —                                                | See [ARD](../../product/ARD.md) and [TRD](../../architecture/TRD.md); add widget/layout notes here as needed | Living |
 

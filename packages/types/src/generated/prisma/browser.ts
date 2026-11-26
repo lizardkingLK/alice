@@ -216,6 +216,24 @@ export type chart_shares = Prisma.chart_sharesModel
  */
 export type version_control_pull_requests = Prisma.version_control_pull_requestsModel
 /**
+ * Model version_control_branches
+ * Synced branch tips for a project-bound repo (webhook `push` / `create` / `delete`).
+ * `work_item_id` is optional (auto-link from branch name when resolvable).
+ */
+export type version_control_branches = Prisma.version_control_branchesModel
+/**
+ * Model version_control_commits
+ * Synced commits for a project-bound repo (webhook `push`).
+ * `work_item_id` is optional (auto-link from branch / message when resolvable).
+ */
+export type version_control_commits = Prisma.version_control_commitsModel
+/**
+ * Model job_runs
+ * Product tracking for BullMQ jobs (operational queue ≠ product SoT).
+ * Phase 3–4: SC domain events enqueue `workflow.run` rows here.
+ */
+export type job_runs = Prisma.job_runsModel
+/**
  * Model integrations
  * Workspace-level integration instance (chat models, Slack, Figma, etc.).
  * Secrets live encrypted inside `config` JSONB; API access is service-role only.

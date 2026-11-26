@@ -17,6 +17,17 @@ globs: "**/*"
 - Do not use `any` (`@typescript-eslint/no-explicit-any`).
 - Do not add `eslint-disable` for lint rules without a brief justification.
 - Never use nested ternary operators (`a ? b : c ? d : e`). Prefer `if` / `else if` / `else` (or early returns) for readability and to satisfy SonarQube (`typescript:S3358`). A single-level ternary is fine for simple one-line assignments.
+- Prefer `String.raw` for string literals that need a real backslash (regex
+  replacements, Windows paths, escape sequences as data). Avoid doubled
+  escapes — SonarQube `typescript:S7780`:
+
+```ts
+// ❌ doubled escapes
+value.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// ✅ String.raw
+value.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+```
 
 ### React (TSX)
 

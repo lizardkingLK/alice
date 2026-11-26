@@ -321,6 +321,8 @@ export type projectsWhereInput = {
   project_integrations?: Prisma.IntegrationsListRelationFilter
   weekly_report_subscriptions?: Prisma.Weekly_project_report_subscriptionsListRelationFilter
   weekly_project_reports?: Prisma.Weekly_project_reportsListRelationFilter
+  version_control_branches?: Prisma.Version_control_branchesListRelationFilter
+  version_control_commits?: Prisma.Version_control_commitsListRelationFilter
 }
 
 export type projectsOrderByWithRelationInput = {
@@ -365,6 +367,8 @@ export type projectsOrderByWithRelationInput = {
   project_integrations?: Prisma.integrationsOrderByRelationAggregateInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsOrderByRelationAggregateInput
   weekly_project_reports?: Prisma.weekly_project_reportsOrderByRelationAggregateInput
+  version_control_branches?: Prisma.version_control_branchesOrderByRelationAggregateInput
+  version_control_commits?: Prisma.version_control_commitsOrderByRelationAggregateInput
 }
 
 export type projectsWhereUniqueInput = Prisma.AtLeast<{
@@ -412,6 +416,8 @@ export type projectsWhereUniqueInput = Prisma.AtLeast<{
   project_integrations?: Prisma.IntegrationsListRelationFilter
   weekly_report_subscriptions?: Prisma.Weekly_project_report_subscriptionsListRelationFilter
   weekly_project_reports?: Prisma.Weekly_project_reportsListRelationFilter
+  version_control_branches?: Prisma.Version_control_branchesListRelationFilter
+  version_control_commits?: Prisma.Version_control_commitsListRelationFilter
 }, "id" | "key">
 
 export type projectsOrderByWithAggregationInput = {
@@ -507,6 +513,8 @@ export type projectsCreateInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateInput = {
@@ -546,6 +554,8 @@ export type projectsUncheckedCreateInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUpdateInput = {
@@ -585,6 +595,8 @@ export type projectsUpdateInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateInput = {
@@ -624,6 +636,8 @@ export type projectsUncheckedUpdateInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateManyInput = {
@@ -1173,6 +1187,34 @@ export type projectsUpdateOneWithoutSaved_viewsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.projectsUpdateToOneWithWhereWithoutSaved_viewsInput, Prisma.projectsUpdateWithoutSaved_viewsInput>, Prisma.projectsUncheckedUpdateWithoutSaved_viewsInput>
 }
 
+export type projectsCreateNestedOneWithoutVersion_control_branchesInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutVersion_control_branchesInput, Prisma.projectsUncheckedCreateWithoutVersion_control_branchesInput>
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutVersion_control_branchesInput
+  connect?: Prisma.projectsWhereUniqueInput
+}
+
+export type projectsUpdateOneRequiredWithoutVersion_control_branchesNestedInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutVersion_control_branchesInput, Prisma.projectsUncheckedCreateWithoutVersion_control_branchesInput>
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutVersion_control_branchesInput
+  upsert?: Prisma.projectsUpsertWithoutVersion_control_branchesInput
+  connect?: Prisma.projectsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.projectsUpdateToOneWithWhereWithoutVersion_control_branchesInput, Prisma.projectsUpdateWithoutVersion_control_branchesInput>, Prisma.projectsUncheckedUpdateWithoutVersion_control_branchesInput>
+}
+
+export type projectsCreateNestedOneWithoutVersion_control_commitsInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutVersion_control_commitsInput, Prisma.projectsUncheckedCreateWithoutVersion_control_commitsInput>
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutVersion_control_commitsInput
+  connect?: Prisma.projectsWhereUniqueInput
+}
+
+export type projectsUpdateOneRequiredWithoutVersion_control_commitsNestedInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutVersion_control_commitsInput, Prisma.projectsUncheckedCreateWithoutVersion_control_commitsInput>
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutVersion_control_commitsInput
+  upsert?: Prisma.projectsUpsertWithoutVersion_control_commitsInput
+  connect?: Prisma.projectsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.projectsUpdateToOneWithWhereWithoutVersion_control_commitsInput, Prisma.projectsUpdateWithoutVersion_control_commitsInput>, Prisma.projectsUncheckedUpdateWithoutVersion_control_commitsInput>
+}
+
 export type projectsCreateNestedOneWithoutProject_integrationsInput = {
   create?: Prisma.XOR<Prisma.projectsCreateWithoutProject_integrationsInput, Prisma.projectsUncheckedCreateWithoutProject_integrationsInput>
   connectOrCreate?: Prisma.projectsCreateOrConnectWithoutProject_integrationsInput
@@ -1239,6 +1281,8 @@ export type projectsCreateWithoutOwnerInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutOwnerInput = {
@@ -1277,6 +1321,8 @@ export type projectsUncheckedCreateWithoutOwnerInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutOwnerInput = {
@@ -1325,6 +1371,8 @@ export type projectsCreateWithoutCreated_by_userInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutCreated_by_userInput = {
@@ -1363,6 +1411,8 @@ export type projectsUncheckedCreateWithoutCreated_by_userInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutCreated_by_userInput = {
@@ -1411,6 +1461,8 @@ export type projectsCreateWithoutUpdated_by_userInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutUpdated_by_userInput = {
@@ -1449,6 +1501,8 @@ export type projectsUncheckedCreateWithoutUpdated_by_userInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutUpdated_by_userInput = {
@@ -1573,6 +1627,8 @@ export type projectsCreateWithoutMembersInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutMembersInput = {
@@ -1611,6 +1667,8 @@ export type projectsUncheckedCreateWithoutMembersInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutMembersInput = {
@@ -1665,6 +1723,8 @@ export type projectsUpdateWithoutMembersInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutMembersInput = {
@@ -1703,6 +1763,8 @@ export type projectsUncheckedUpdateWithoutMembersInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutTeamsInput = {
@@ -1741,6 +1803,8 @@ export type projectsCreateWithoutTeamsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutTeamsInput = {
@@ -1779,6 +1843,8 @@ export type projectsUncheckedCreateWithoutTeamsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutTeamsInput = {
@@ -1833,6 +1899,8 @@ export type projectsUpdateWithoutTeamsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutTeamsInput = {
@@ -1871,6 +1939,8 @@ export type projectsUncheckedUpdateWithoutTeamsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutSprintsInput = {
@@ -1909,6 +1979,8 @@ export type projectsCreateWithoutSprintsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutSprintsInput = {
@@ -1947,6 +2019,8 @@ export type projectsUncheckedCreateWithoutSprintsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutSprintsInput = {
@@ -2001,6 +2075,8 @@ export type projectsUpdateWithoutSprintsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutSprintsInput = {
@@ -2039,6 +2115,8 @@ export type projectsUncheckedUpdateWithoutSprintsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutWork_itemsInput = {
@@ -2077,6 +2155,8 @@ export type projectsCreateWithoutWork_itemsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutWork_itemsInput = {
@@ -2115,6 +2195,8 @@ export type projectsUncheckedCreateWithoutWork_itemsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutWork_itemsInput = {
@@ -2169,6 +2251,8 @@ export type projectsUpdateWithoutWork_itemsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutWork_itemsInput = {
@@ -2207,6 +2291,8 @@ export type projectsUncheckedUpdateWithoutWork_itemsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutWork_item_linksInput = {
@@ -2245,6 +2331,8 @@ export type projectsCreateWithoutWork_item_linksInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutWork_item_linksInput = {
@@ -2283,6 +2371,8 @@ export type projectsUncheckedCreateWithoutWork_item_linksInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutWork_item_linksInput = {
@@ -2337,6 +2427,8 @@ export type projectsUpdateWithoutWork_item_linksInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutWork_item_linksInput = {
@@ -2375,6 +2467,8 @@ export type projectsUncheckedUpdateWithoutWork_item_linksInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutBurndown_rollupsInput = {
@@ -2413,6 +2507,8 @@ export type projectsCreateWithoutBurndown_rollupsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutBurndown_rollupsInput = {
@@ -2451,6 +2547,8 @@ export type projectsUncheckedCreateWithoutBurndown_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutBurndown_rollupsInput = {
@@ -2505,6 +2603,8 @@ export type projectsUpdateWithoutBurndown_rollupsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutBurndown_rollupsInput = {
@@ -2543,6 +2643,8 @@ export type projectsUncheckedUpdateWithoutBurndown_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutContribution_rollupsInput = {
@@ -2581,6 +2683,8 @@ export type projectsCreateWithoutContribution_rollupsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutContribution_rollupsInput = {
@@ -2619,6 +2723,8 @@ export type projectsUncheckedCreateWithoutContribution_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutContribution_rollupsInput = {
@@ -2673,6 +2779,8 @@ export type projectsUpdateWithoutContribution_rollupsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutContribution_rollupsInput = {
@@ -2711,6 +2819,8 @@ export type projectsUncheckedUpdateWithoutContribution_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutChart_rollupsInput = {
@@ -2749,6 +2859,8 @@ export type projectsCreateWithoutChart_rollupsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutChart_rollupsInput = {
@@ -2787,6 +2899,8 @@ export type projectsUncheckedCreateWithoutChart_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutChart_rollupsInput = {
@@ -2841,6 +2955,8 @@ export type projectsUpdateWithoutChart_rollupsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutChart_rollupsInput = {
@@ -2879,6 +2995,8 @@ export type projectsUncheckedUpdateWithoutChart_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutChart_hierarchy_rollupsInput = {
@@ -2917,6 +3035,8 @@ export type projectsCreateWithoutChart_hierarchy_rollupsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutChart_hierarchy_rollupsInput = {
@@ -2955,6 +3075,8 @@ export type projectsUncheckedCreateWithoutChart_hierarchy_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutChart_hierarchy_rollupsInput = {
@@ -3009,6 +3131,8 @@ export type projectsUpdateWithoutChart_hierarchy_rollupsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutChart_hierarchy_rollupsInput = {
@@ -3047,6 +3171,8 @@ export type projectsUncheckedUpdateWithoutChart_hierarchy_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutWeekly_report_subscriptionsInput = {
@@ -3085,6 +3211,8 @@ export type projectsCreateWithoutWeekly_report_subscriptionsInput = {
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutWeekly_report_subscriptionsInput = {
@@ -3123,6 +3251,8 @@ export type projectsUncheckedCreateWithoutWeekly_report_subscriptionsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutWeekly_report_subscriptionsInput = {
@@ -3177,6 +3307,8 @@ export type projectsUpdateWithoutWeekly_report_subscriptionsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutWeekly_report_subscriptionsInput = {
@@ -3215,6 +3347,8 @@ export type projectsUncheckedUpdateWithoutWeekly_report_subscriptionsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutWeekly_project_reportsInput = {
@@ -3253,6 +3387,8 @@ export type projectsCreateWithoutWeekly_project_reportsInput = {
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutWeekly_project_reportsInput = {
@@ -3291,6 +3427,8 @@ export type projectsUncheckedCreateWithoutWeekly_project_reportsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutWeekly_project_reportsInput = {
@@ -3345,6 +3483,8 @@ export type projectsUpdateWithoutWeekly_project_reportsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutWeekly_project_reportsInput = {
@@ -3383,6 +3523,8 @@ export type projectsUncheckedUpdateWithoutWeekly_project_reportsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutPm_connectionInput = {
@@ -3421,6 +3563,8 @@ export type projectsCreateWithoutPm_connectionInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutPm_connectionInput = {
@@ -3459,6 +3603,8 @@ export type projectsUncheckedCreateWithoutPm_connectionInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutPm_connectionInput = {
@@ -3523,6 +3669,8 @@ export type projectsCreateWithoutVc_connectionInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutVc_connectionInput = {
@@ -3561,6 +3709,8 @@ export type projectsUncheckedCreateWithoutVc_connectionInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutVc_connectionInput = {
@@ -3625,6 +3775,8 @@ export type projectsCreateWithoutSaved_viewsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutSaved_viewsInput = {
@@ -3663,6 +3815,8 @@ export type projectsUncheckedCreateWithoutSaved_viewsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutSaved_viewsInput = {
@@ -3717,6 +3871,8 @@ export type projectsUpdateWithoutSaved_viewsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutSaved_viewsInput = {
@@ -3755,6 +3911,360 @@ export type projectsUncheckedUpdateWithoutSaved_viewsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
+}
+
+export type projectsCreateWithoutVersion_control_branchesInput = {
+  id?: string
+  name: string
+  key: string
+  description?: string | null
+  start_date?: Date | string | null
+  end_date?: Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: $Enums.ProjectStatus
+  deleted_at?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
+  owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
+  members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
+  teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
+  sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
+  work_items?: Prisma.work_itemsCreateNestedManyWithoutProjectInput
+  work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutProjectInput
+  chart_rollups?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutProjectInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutProjectInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
+  contribution_rollups?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutProjectInput
+  saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
+  integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
+  weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
+}
+
+export type projectsUncheckedCreateWithoutVersion_control_branchesInput = {
+  id?: string
+  name: string
+  key: string
+  description?: string | null
+  owner_id: string
+  start_date?: Date | string | null
+  end_date?: Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: $Enums.ProjectStatus
+  deleted_at?: Date | string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
+  members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
+  teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
+  sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutProjectInput
+  work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutProjectInput
+  work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutProjectInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  contribution_rollups?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
+  integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
+  weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
+}
+
+export type projectsCreateOrConnectWithoutVersion_control_branchesInput = {
+  where: Prisma.projectsWhereUniqueInput
+  create: Prisma.XOR<Prisma.projectsCreateWithoutVersion_control_branchesInput, Prisma.projectsUncheckedCreateWithoutVersion_control_branchesInput>
+}
+
+export type projectsUpsertWithoutVersion_control_branchesInput = {
+  update: Prisma.XOR<Prisma.projectsUpdateWithoutVersion_control_branchesInput, Prisma.projectsUncheckedUpdateWithoutVersion_control_branchesInput>
+  create: Prisma.XOR<Prisma.projectsCreateWithoutVersion_control_branchesInput, Prisma.projectsUncheckedCreateWithoutVersion_control_branchesInput>
+  where?: Prisma.projectsWhereInput
+}
+
+export type projectsUpdateToOneWithWhereWithoutVersion_control_branchesInput = {
+  where?: Prisma.projectsWhereInput
+  data: Prisma.XOR<Prisma.projectsUpdateWithoutVersion_control_branchesInput, Prisma.projectsUncheckedUpdateWithoutVersion_control_branchesInput>
+}
+
+export type projectsUpdateWithoutVersion_control_branchesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
+  members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
+  teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
+  sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
+  work_items?: Prisma.work_itemsUpdateManyWithoutProjectNestedInput
+  work_item_links?: Prisma.work_item_linksUpdateManyWithoutProjectNestedInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUpdateManyWithoutProjectNestedInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutProjectNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
+  contribution_rollups?: Prisma.sprint_contribution_rollupsUpdateManyWithoutProjectNestedInput
+  saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
+  integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
+  weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
+}
+
+export type projectsUncheckedUpdateWithoutVersion_control_branchesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner_id?: Prisma.StringFieldUpdateOperationsInput | string
+  start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
+  teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
+  sprints?: Prisma.sprintsUncheckedUpdateManyWithoutProjectNestedInput
+  work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutProjectNestedInput
+  work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutProjectNestedInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  contribution_rollups?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
+  integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
+  weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
+}
+
+export type projectsCreateWithoutVersion_control_commitsInput = {
+  id?: string
+  name: string
+  key: string
+  description?: string | null
+  start_date?: Date | string | null
+  end_date?: Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: $Enums.ProjectStatus
+  deleted_at?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
+  owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
+  members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
+  teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
+  sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
+  work_items?: Prisma.work_itemsCreateNestedManyWithoutProjectInput
+  work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutProjectInput
+  chart_rollups?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutProjectInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutProjectInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
+  contribution_rollups?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutProjectInput
+  saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
+  integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
+  weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+}
+
+export type projectsUncheckedCreateWithoutVersion_control_commitsInput = {
+  id?: string
+  name: string
+  key: string
+  description?: string | null
+  owner_id: string
+  start_date?: Date | string | null
+  end_date?: Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: $Enums.ProjectStatus
+  deleted_at?: Date | string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
+  members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
+  teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
+  sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutProjectInput
+  work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutProjectInput
+  work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutProjectInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  contribution_rollups?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
+  integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
+  weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+}
+
+export type projectsCreateOrConnectWithoutVersion_control_commitsInput = {
+  where: Prisma.projectsWhereUniqueInput
+  create: Prisma.XOR<Prisma.projectsCreateWithoutVersion_control_commitsInput, Prisma.projectsUncheckedCreateWithoutVersion_control_commitsInput>
+}
+
+export type projectsUpsertWithoutVersion_control_commitsInput = {
+  update: Prisma.XOR<Prisma.projectsUpdateWithoutVersion_control_commitsInput, Prisma.projectsUncheckedUpdateWithoutVersion_control_commitsInput>
+  create: Prisma.XOR<Prisma.projectsCreateWithoutVersion_control_commitsInput, Prisma.projectsUncheckedCreateWithoutVersion_control_commitsInput>
+  where?: Prisma.projectsWhereInput
+}
+
+export type projectsUpdateToOneWithWhereWithoutVersion_control_commitsInput = {
+  where?: Prisma.projectsWhereInput
+  data: Prisma.XOR<Prisma.projectsUpdateWithoutVersion_control_commitsInput, Prisma.projectsUncheckedUpdateWithoutVersion_control_commitsInput>
+}
+
+export type projectsUpdateWithoutVersion_control_commitsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
+  members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
+  teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
+  sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
+  work_items?: Prisma.work_itemsUpdateManyWithoutProjectNestedInput
+  work_item_links?: Prisma.work_item_linksUpdateManyWithoutProjectNestedInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUpdateManyWithoutProjectNestedInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutProjectNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
+  contribution_rollups?: Prisma.sprint_contribution_rollupsUpdateManyWithoutProjectNestedInput
+  saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
+  integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
+  weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+}
+
+export type projectsUncheckedUpdateWithoutVersion_control_commitsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner_id?: Prisma.StringFieldUpdateOperationsInput | string
+  start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
+  teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
+  sprints?: Prisma.sprintsUncheckedUpdateManyWithoutProjectNestedInput
+  work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutProjectNestedInput
+  work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutProjectNestedInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  contribution_rollups?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
+  integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
+  weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutProject_integrationsInput = {
@@ -3793,6 +4303,8 @@ export type projectsCreateWithoutProject_integrationsInput = {
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutProject_integrationsInput = {
@@ -3831,6 +4343,8 @@ export type projectsUncheckedCreateWithoutProject_integrationsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutProject_integrationsInput = {
@@ -3885,6 +4399,8 @@ export type projectsUpdateWithoutProject_integrationsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutProject_integrationsInput = {
@@ -3923,6 +4439,8 @@ export type projectsUncheckedUpdateWithoutProject_integrationsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateWithoutIntegration_bindingsInput = {
@@ -3961,6 +4479,8 @@ export type projectsCreateWithoutIntegration_bindingsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsCreateNestedManyWithoutProjectInput
 }
 
 export type projectsUncheckedCreateWithoutIntegration_bindingsInput = {
@@ -3999,6 +4519,8 @@ export type projectsUncheckedCreateWithoutIntegration_bindingsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedCreateNestedManyWithoutProjectInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type projectsCreateOrConnectWithoutIntegration_bindingsInput = {
@@ -4053,6 +4575,8 @@ export type projectsUpdateWithoutIntegration_bindingsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutIntegration_bindingsInput = {
@@ -4091,6 +4615,8 @@ export type projectsUncheckedUpdateWithoutIntegration_bindingsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsCreateManyOwnerInput = {
@@ -4201,6 +4727,8 @@ export type projectsUpdateWithoutOwnerInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutOwnerInput = {
@@ -4239,6 +4767,8 @@ export type projectsUncheckedUpdateWithoutOwnerInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateManyWithoutOwnerInput = {
@@ -4301,6 +4831,8 @@ export type projectsUpdateWithoutCreated_by_userInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutCreated_by_userInput = {
@@ -4339,6 +4871,8 @@ export type projectsUncheckedUpdateWithoutCreated_by_userInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateManyWithoutCreated_by_userInput = {
@@ -4401,6 +4935,8 @@ export type projectsUpdateWithoutUpdated_by_userInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutUpdated_by_userInput = {
@@ -4439,6 +4975,8 @@ export type projectsUncheckedUpdateWithoutUpdated_by_userInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateManyWithoutUpdated_by_userInput = {
@@ -4525,6 +5063,8 @@ export type projectsUpdateWithoutPm_connectionInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutPm_connectionInput = {
@@ -4563,6 +5103,8 @@ export type projectsUncheckedUpdateWithoutPm_connectionInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateManyWithoutPm_connectionInput = {
@@ -4649,6 +5191,8 @@ export type projectsUpdateWithoutVc_connectionInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateWithoutVc_connectionInput = {
@@ -4687,6 +5231,8 @@ export type projectsUncheckedUpdateWithoutVc_connectionInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_branches?: Prisma.version_control_branchesUncheckedUpdateManyWithoutProjectNestedInput
+  version_control_commits?: Prisma.version_control_commitsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type projectsUncheckedUpdateManyWithoutVc_connectionInput = {
@@ -4733,6 +5279,8 @@ export type ProjectsCountOutputType = {
   project_integrations: number
   weekly_report_subscriptions: number
   weekly_project_reports: number
+  version_control_branches: number
+  version_control_commits: number
 }
 
 export type ProjectsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -4750,6 +5298,8 @@ export type ProjectsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensio
   project_integrations?: boolean | ProjectsCountOutputTypeCountProject_integrationsArgs
   weekly_report_subscriptions?: boolean | ProjectsCountOutputTypeCountWeekly_report_subscriptionsArgs
   weekly_project_reports?: boolean | ProjectsCountOutputTypeCountWeekly_project_reportsArgs
+  version_control_branches?: boolean | ProjectsCountOutputTypeCountVersion_control_branchesArgs
+  version_control_commits?: boolean | ProjectsCountOutputTypeCountVersion_control_commitsArgs
 }
 
 /**
@@ -4860,6 +5410,20 @@ export type ProjectsCountOutputTypeCountWeekly_project_reportsArgs<ExtArgs exten
   where?: Prisma.weekly_project_reportsWhereInput
 }
 
+/**
+ * ProjectsCountOutputType without action
+ */
+export type ProjectsCountOutputTypeCountVersion_control_branchesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.version_control_branchesWhereInput
+}
+
+/**
+ * ProjectsCountOutputType without action
+ */
+export type ProjectsCountOutputTypeCountVersion_control_commitsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.version_control_commitsWhereInput
+}
+
 
 export type projectsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -4903,6 +5467,8 @@ export type projectsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   project_integrations?: boolean | Prisma.projects$project_integrationsArgs<ExtArgs>
   weekly_report_subscriptions?: boolean | Prisma.projects$weekly_report_subscriptionsArgs<ExtArgs>
   weekly_project_reports?: boolean | Prisma.projects$weekly_project_reportsArgs<ExtArgs>
+  version_control_branches?: boolean | Prisma.projects$version_control_branchesArgs<ExtArgs>
+  version_control_commits?: boolean | Prisma.projects$version_control_commitsArgs<ExtArgs>
   _count?: boolean | Prisma.ProjectsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["projects"]>
 
@@ -5012,6 +5578,8 @@ export type projectsInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   project_integrations?: boolean | Prisma.projects$project_integrationsArgs<ExtArgs>
   weekly_report_subscriptions?: boolean | Prisma.projects$weekly_report_subscriptionsArgs<ExtArgs>
   weekly_project_reports?: boolean | Prisma.projects$weekly_project_reportsArgs<ExtArgs>
+  version_control_branches?: boolean | Prisma.projects$version_control_branchesArgs<ExtArgs>
+  version_control_commits?: boolean | Prisma.projects$version_control_commitsArgs<ExtArgs>
   _count?: boolean | Prisma.ProjectsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type projectsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -5051,6 +5619,8 @@ export type $projectsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     project_integrations: Prisma.$integrationsPayload<ExtArgs>[]
     weekly_report_subscriptions: Prisma.$weekly_project_report_subscriptionsPayload<ExtArgs>[]
     weekly_project_reports: Prisma.$weekly_project_reportsPayload<ExtArgs>[]
+    version_control_branches: Prisma.$version_control_branchesPayload<ExtArgs>[]
+    version_control_commits: Prisma.$version_control_commitsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -5503,6 +6073,8 @@ export interface Prisma__projectsClient<T, Null = never, ExtArgs extends runtime
   project_integrations<T extends Prisma.projects$project_integrationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$project_integrationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$integrationsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   weekly_report_subscriptions<T extends Prisma.projects$weekly_report_subscriptionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$weekly_report_subscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$weekly_project_report_subscriptionsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   weekly_project_reports<T extends Prisma.projects$weekly_project_reportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$weekly_project_reportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$weekly_project_reportsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  version_control_branches<T extends Prisma.projects$version_control_branchesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$version_control_branchesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$version_control_branchesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  version_control_commits<T extends Prisma.projects$version_control_commitsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$version_control_commitsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$version_control_commitsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6364,6 +6936,54 @@ export type projects$weekly_project_reportsArgs<ExtArgs extends runtime.Types.Ex
   take?: number
   skip?: number
   distinct?: Prisma.Weekly_project_reportsScalarFieldEnum | Prisma.Weekly_project_reportsScalarFieldEnum[]
+}
+
+/**
+ * projects.version_control_branches
+ */
+export type projects$version_control_branchesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the version_control_branches
+   */
+  select?: Prisma.version_control_branchesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the version_control_branches
+   */
+  omit?: Prisma.version_control_branchesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.version_control_branchesInclude<ExtArgs> | null
+  where?: Prisma.version_control_branchesWhereInput
+  orderBy?: Prisma.version_control_branchesOrderByWithRelationInput | Prisma.version_control_branchesOrderByWithRelationInput[]
+  cursor?: Prisma.version_control_branchesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Version_control_branchesScalarFieldEnum | Prisma.Version_control_branchesScalarFieldEnum[]
+}
+
+/**
+ * projects.version_control_commits
+ */
+export type projects$version_control_commitsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the version_control_commits
+   */
+  select?: Prisma.version_control_commitsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the version_control_commits
+   */
+  omit?: Prisma.version_control_commitsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.version_control_commitsInclude<ExtArgs> | null
+  where?: Prisma.version_control_commitsWhereInput
+  orderBy?: Prisma.version_control_commitsOrderByWithRelationInput | Prisma.version_control_commitsOrderByWithRelationInput[]
+  cursor?: Prisma.version_control_commitsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Version_control_commitsScalarFieldEnum | Prisma.Version_control_commitsScalarFieldEnum[]
 }
 
 /**
