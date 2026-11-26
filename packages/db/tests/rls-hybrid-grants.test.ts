@@ -39,6 +39,7 @@ const STRATEGY_A_TABLES = [
   'figma_oauth_credentials',
   'figma_connections',
   'figma_oauth_attempts',
+  'figma_oauth_operations',
   'chat_attachments',
   'access_allowlist',
   'access_requests',
@@ -59,6 +60,12 @@ describe('hybrid RLS grants regression', () => {
       if (table === 'notification_email_events') {
         expect(grantsSql).toMatch(
           /REVOKE ALL ON TABLE public\.notification_email_events FROM PUBLIC, anon, authenticated, service_role, postgres/i
+        );
+        continue;
+      }
+      if (table === 'figma_oauth_operations') {
+        expect(grantsSql).toMatch(
+          /REVOKE ALL ON TABLE public\.figma_oauth_operations FROM PUBLIC, anon, authenticated/i
         );
         continue;
       }

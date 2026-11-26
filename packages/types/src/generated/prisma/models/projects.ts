@@ -20,8 +20,18 @@ export type projectsModel = runtime.Types.Result.DefaultSelection<Prisma.$projec
 
 export type AggregateProjects = {
   _count: ProjectsCountAggregateOutputType | null
+  _avg: ProjectsAvgAggregateOutputType | null
+  _sum: ProjectsSumAggregateOutputType | null
   _min: ProjectsMinAggregateOutputType | null
   _max: ProjectsMaxAggregateOutputType | null
+}
+
+export type ProjectsAvgAggregateOutputType = {
+  figma_binding_generation: number | null
+}
+
+export type ProjectsSumAggregateOutputType = {
+  figma_binding_generation: number | null
 }
 
 export type ProjectsMinAggregateOutputType = {
@@ -41,6 +51,7 @@ export type ProjectsMinAggregateOutputType = {
   pm_connection_id: string | null
   vc_connection_id: string | null
   figma_url: string | null
+  figma_binding_generation: number | null
   logo_url: string | null
   cover_picture: string | null
 }
@@ -62,6 +73,7 @@ export type ProjectsMaxAggregateOutputType = {
   pm_connection_id: string | null
   vc_connection_id: string | null
   figma_url: string | null
+  figma_binding_generation: number | null
   logo_url: string | null
   cover_picture: string | null
 }
@@ -87,11 +99,20 @@ export type ProjectsCountAggregateOutputType = {
   vc_connection_id: number
   vc_external: number
   figma_url: number
+  figma_binding_generation: number
   logo_url: number
   cover_picture: number
   _all: number
 }
 
+
+export type ProjectsAvgAggregateInputType = {
+  figma_binding_generation?: true
+}
+
+export type ProjectsSumAggregateInputType = {
+  figma_binding_generation?: true
+}
 
 export type ProjectsMinAggregateInputType = {
   id?: true
@@ -110,6 +131,7 @@ export type ProjectsMinAggregateInputType = {
   pm_connection_id?: true
   vc_connection_id?: true
   figma_url?: true
+  figma_binding_generation?: true
   logo_url?: true
   cover_picture?: true
 }
@@ -131,6 +153,7 @@ export type ProjectsMaxAggregateInputType = {
   pm_connection_id?: true
   vc_connection_id?: true
   figma_url?: true
+  figma_binding_generation?: true
   logo_url?: true
   cover_picture?: true
 }
@@ -156,6 +179,7 @@ export type ProjectsCountAggregateInputType = {
   vc_connection_id?: true
   vc_external?: true
   figma_url?: true
+  figma_binding_generation?: true
   logo_url?: true
   cover_picture?: true
   _all?: true
@@ -199,6 +223,18 @@ export type ProjectsAggregateArgs<ExtArgs extends runtime.Types.Extensions.Inter
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: ProjectsAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: ProjectsSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: ProjectsMinAggregateInputType
@@ -229,6 +265,8 @@ export type projectsGroupByArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   _count?: ProjectsCountAggregateInputType | true
+  _avg?: ProjectsAvgAggregateInputType
+  _sum?: ProjectsSumAggregateInputType
   _min?: ProjectsMinAggregateInputType
   _max?: ProjectsMaxAggregateInputType
 }
@@ -254,9 +292,12 @@ export type ProjectsGroupByOutputType = {
   vc_connection_id: string | null
   vc_external: runtime.JsonValue | null
   figma_url: string | null
+  figma_binding_generation: number
   logo_url: string | null
   cover_picture: string | null
   _count: ProjectsCountAggregateOutputType | null
+  _avg: ProjectsAvgAggregateOutputType | null
+  _sum: ProjectsSumAggregateOutputType | null
   _min: ProjectsMinAggregateOutputType | null
   _max: ProjectsMaxAggregateOutputType | null
 }
@@ -300,6 +341,7 @@ export type projectsWhereInput = {
   vc_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
   vc_external?: Prisma.JsonNullableFilter<"projects">
   figma_url?: Prisma.StringNullableFilter<"projects"> | string | null
+  figma_binding_generation?: Prisma.IntFilter<"projects"> | number
   logo_url?: Prisma.StringNullableFilter<"projects"> | string | null
   cover_picture?: Prisma.StringNullableFilter<"projects"> | string | null
   owner?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
@@ -321,6 +363,7 @@ export type projectsWhereInput = {
   project_integrations?: Prisma.IntegrationsListRelationFilter
   figma_connection?: Prisma.XOR<Prisma.Figma_connectionsNullableScalarRelationFilter, Prisma.figma_connectionsWhereInput> | null
   figma_oauth_attempts?: Prisma.Figma_oauth_attemptsListRelationFilter
+  figma_oauth_operations?: Prisma.Figma_oauth_operationsListRelationFilter
   weekly_report_subscriptions?: Prisma.Weekly_project_report_subscriptionsListRelationFilter
   weekly_project_reports?: Prisma.Weekly_project_reportsListRelationFilter
 }
@@ -346,6 +389,7 @@ export type projectsOrderByWithRelationInput = {
   vc_connection_id?: Prisma.SortOrderInput | Prisma.SortOrder
   vc_external?: Prisma.SortOrderInput | Prisma.SortOrder
   figma_url?: Prisma.SortOrderInput | Prisma.SortOrder
+  figma_binding_generation?: Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
   cover_picture?: Prisma.SortOrderInput | Prisma.SortOrder
   owner?: Prisma.usersOrderByWithRelationInput
@@ -367,6 +411,7 @@ export type projectsOrderByWithRelationInput = {
   project_integrations?: Prisma.integrationsOrderByRelationAggregateInput
   figma_connection?: Prisma.figma_connectionsOrderByWithRelationInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsOrderByRelationAggregateInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsOrderByRelationAggregateInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsOrderByRelationAggregateInput
   weekly_project_reports?: Prisma.weekly_project_reportsOrderByRelationAggregateInput
 }
@@ -395,6 +440,7 @@ export type projectsWhereUniqueInput = Prisma.AtLeast<{
   vc_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
   vc_external?: Prisma.JsonNullableFilter<"projects">
   figma_url?: Prisma.StringNullableFilter<"projects"> | string | null
+  figma_binding_generation?: Prisma.IntFilter<"projects"> | number
   logo_url?: Prisma.StringNullableFilter<"projects"> | string | null
   cover_picture?: Prisma.StringNullableFilter<"projects"> | string | null
   owner?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
@@ -416,6 +462,7 @@ export type projectsWhereUniqueInput = Prisma.AtLeast<{
   project_integrations?: Prisma.IntegrationsListRelationFilter
   figma_connection?: Prisma.XOR<Prisma.Figma_connectionsNullableScalarRelationFilter, Prisma.figma_connectionsWhereInput> | null
   figma_oauth_attempts?: Prisma.Figma_oauth_attemptsListRelationFilter
+  figma_oauth_operations?: Prisma.Figma_oauth_operationsListRelationFilter
   weekly_report_subscriptions?: Prisma.Weekly_project_report_subscriptionsListRelationFilter
   weekly_project_reports?: Prisma.Weekly_project_reportsListRelationFilter
 }, "id" | "key">
@@ -441,11 +488,14 @@ export type projectsOrderByWithAggregationInput = {
   vc_connection_id?: Prisma.SortOrderInput | Prisma.SortOrder
   vc_external?: Prisma.SortOrderInput | Prisma.SortOrder
   figma_url?: Prisma.SortOrderInput | Prisma.SortOrder
+  figma_binding_generation?: Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
   cover_picture?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.projectsCountOrderByAggregateInput
+  _avg?: Prisma.projectsAvgOrderByAggregateInput
   _max?: Prisma.projectsMaxOrderByAggregateInput
   _min?: Prisma.projectsMinOrderByAggregateInput
+  _sum?: Prisma.projectsSumOrderByAggregateInput
 }
 
 export type projectsScalarWhereWithAggregatesInput = {
@@ -472,6 +522,7 @@ export type projectsScalarWhereWithAggregatesInput = {
   vc_connection_id?: Prisma.UuidNullableWithAggregatesFilter<"projects"> | string | null
   vc_external?: Prisma.JsonNullableWithAggregatesFilter<"projects">
   figma_url?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
+  figma_binding_generation?: Prisma.IntWithAggregatesFilter<"projects"> | number
   logo_url?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
   cover_picture?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
 }
@@ -492,6 +543,7 @@ export type projectsCreateInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -513,6 +565,7 @@ export type projectsCreateInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -538,6 +591,7 @@ export type projectsUncheckedCreateInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -554,6 +608,7 @@ export type projectsUncheckedCreateInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -574,6 +629,7 @@ export type projectsUpdateInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -595,6 +651,7 @@ export type projectsUpdateInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -620,6 +677,7 @@ export type projectsUncheckedUpdateInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -636,6 +694,7 @@ export type projectsUncheckedUpdateInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -661,6 +720,7 @@ export type projectsCreateManyInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -681,6 +741,7 @@ export type projectsUpdateManyMutationInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -706,6 +767,7 @@ export type projectsUncheckedUpdateManyInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -741,8 +803,13 @@ export type projectsCountOrderByAggregateInput = {
   vc_connection_id?: Prisma.SortOrder
   vc_external?: Prisma.SortOrder
   figma_url?: Prisma.SortOrder
+  figma_binding_generation?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   cover_picture?: Prisma.SortOrder
+}
+
+export type projectsAvgOrderByAggregateInput = {
+  figma_binding_generation?: Prisma.SortOrder
 }
 
 export type projectsMaxOrderByAggregateInput = {
@@ -762,6 +829,7 @@ export type projectsMaxOrderByAggregateInput = {
   pm_connection_id?: Prisma.SortOrder
   vc_connection_id?: Prisma.SortOrder
   figma_url?: Prisma.SortOrder
+  figma_binding_generation?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   cover_picture?: Prisma.SortOrder
 }
@@ -783,8 +851,13 @@ export type projectsMinOrderByAggregateInput = {
   pm_connection_id?: Prisma.SortOrder
   vc_connection_id?: Prisma.SortOrder
   figma_url?: Prisma.SortOrder
+  figma_binding_generation?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   cover_picture?: Prisma.SortOrder
+}
+
+export type projectsSumOrderByAggregateInput = {
+  figma_binding_generation?: Prisma.SortOrder
 }
 
 export type ProjectsScalarRelationFilter = {
@@ -929,6 +1002,14 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
 
 export type EnumProjectStatusFieldUpdateOperationsInput = {
   set?: $Enums.ProjectStatus
+}
+
+export type IntFieldUpdateOperationsInput = {
+  set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type projectsCreateNestedOneWithoutMembersInput = {
@@ -1199,6 +1280,22 @@ export type projectsUpdateOneRequiredWithoutFigma_oauth_attemptsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.projectsUpdateToOneWithWhereWithoutFigma_oauth_attemptsInput, Prisma.projectsUpdateWithoutFigma_oauth_attemptsInput>, Prisma.projectsUncheckedUpdateWithoutFigma_oauth_attemptsInput>
 }
 
+export type projectsCreateNestedOneWithoutFigma_oauth_operationsInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutFigma_oauth_operationsInput, Prisma.projectsUncheckedCreateWithoutFigma_oauth_operationsInput>
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutFigma_oauth_operationsInput
+  connect?: Prisma.projectsWhereUniqueInput
+}
+
+export type projectsUpdateOneWithoutFigma_oauth_operationsNestedInput = {
+  create?: Prisma.XOR<Prisma.projectsCreateWithoutFigma_oauth_operationsInput, Prisma.projectsUncheckedCreateWithoutFigma_oauth_operationsInput>
+  connectOrCreate?: Prisma.projectsCreateOrConnectWithoutFigma_oauth_operationsInput
+  upsert?: Prisma.projectsUpsertWithoutFigma_oauth_operationsInput
+  disconnect?: Prisma.projectsWhereInput | boolean
+  delete?: Prisma.projectsWhereInput | boolean
+  connect?: Prisma.projectsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.projectsUpdateToOneWithWhereWithoutFigma_oauth_operationsInput, Prisma.projectsUpdateWithoutFigma_oauth_operationsInput>, Prisma.projectsUncheckedUpdateWithoutFigma_oauth_operationsInput>
+}
+
 export type projectsCreateNestedOneWithoutSaved_viewsInput = {
   create?: Prisma.XOR<Prisma.projectsCreateWithoutSaved_viewsInput, Prisma.projectsUncheckedCreateWithoutSaved_viewsInput>
   connectOrCreate?: Prisma.projectsCreateOrConnectWithoutSaved_viewsInput
@@ -1261,6 +1358,7 @@ export type projectsCreateWithoutOwnerInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
@@ -1281,6 +1379,7 @@ export type projectsCreateWithoutOwnerInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -1305,6 +1404,7 @@ export type projectsUncheckedCreateWithoutOwnerInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1321,6 +1421,7 @@ export type projectsUncheckedCreateWithoutOwnerInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -1351,6 +1452,7 @@ export type projectsCreateWithoutCreated_by_userInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -1371,6 +1473,7 @@ export type projectsCreateWithoutCreated_by_userInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -1395,6 +1498,7 @@ export type projectsUncheckedCreateWithoutCreated_by_userInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1411,6 +1515,7 @@ export type projectsUncheckedCreateWithoutCreated_by_userInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -1441,6 +1546,7 @@ export type projectsCreateWithoutUpdated_by_userInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -1461,6 +1567,7 @@ export type projectsCreateWithoutUpdated_by_userInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -1485,6 +1592,7 @@ export type projectsUncheckedCreateWithoutUpdated_by_userInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1501,6 +1609,7 @@ export type projectsUncheckedCreateWithoutUpdated_by_userInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -1555,6 +1664,7 @@ export type projectsScalarWhereInput = {
   vc_connection_id?: Prisma.UuidNullableFilter<"projects"> | string | null
   vc_external?: Prisma.JsonNullableFilter<"projects">
   figma_url?: Prisma.StringNullableFilter<"projects"> | string | null
+  figma_binding_generation?: Prisma.IntFilter<"projects"> | number
   logo_url?: Prisma.StringNullableFilter<"projects"> | string | null
   cover_picture?: Prisma.StringNullableFilter<"projects"> | string | null
 }
@@ -1607,6 +1717,7 @@ export type projectsCreateWithoutMembersInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -1627,6 +1738,7 @@ export type projectsCreateWithoutMembersInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -1652,6 +1764,7 @@ export type projectsUncheckedCreateWithoutMembersInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
@@ -1667,6 +1780,7 @@ export type projectsUncheckedCreateWithoutMembersInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -1703,6 +1817,7 @@ export type projectsUpdateWithoutMembersInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -1723,6 +1838,7 @@ export type projectsUpdateWithoutMembersInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -1748,6 +1864,7 @@ export type projectsUncheckedUpdateWithoutMembersInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
@@ -1763,6 +1880,7 @@ export type projectsUncheckedUpdateWithoutMembersInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -1783,6 +1901,7 @@ export type projectsCreateWithoutTeamsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -1803,6 +1922,7 @@ export type projectsCreateWithoutTeamsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -1828,6 +1948,7 @@ export type projectsUncheckedCreateWithoutTeamsInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -1843,6 +1964,7 @@ export type projectsUncheckedCreateWithoutTeamsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -1879,6 +2001,7 @@ export type projectsUpdateWithoutTeamsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -1899,6 +2022,7 @@ export type projectsUpdateWithoutTeamsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -1924,6 +2048,7 @@ export type projectsUncheckedUpdateWithoutTeamsInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -1939,6 +2064,7 @@ export type projectsUncheckedUpdateWithoutTeamsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -1959,6 +2085,7 @@ export type projectsCreateWithoutSprintsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -1979,6 +2106,7 @@ export type projectsCreateWithoutSprintsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -2004,6 +2132,7 @@ export type projectsUncheckedCreateWithoutSprintsInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2019,6 +2148,7 @@ export type projectsUncheckedCreateWithoutSprintsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -2055,6 +2185,7 @@ export type projectsUpdateWithoutSprintsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -2075,6 +2206,7 @@ export type projectsUpdateWithoutSprintsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -2100,6 +2232,7 @@ export type projectsUncheckedUpdateWithoutSprintsInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2115,6 +2248,7 @@ export type projectsUncheckedUpdateWithoutSprintsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -2135,6 +2269,7 @@ export type projectsCreateWithoutWork_itemsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -2155,6 +2290,7 @@ export type projectsCreateWithoutWork_itemsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -2180,6 +2316,7 @@ export type projectsUncheckedCreateWithoutWork_itemsInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2195,6 +2332,7 @@ export type projectsUncheckedCreateWithoutWork_itemsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -2231,6 +2369,7 @@ export type projectsUpdateWithoutWork_itemsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -2251,6 +2390,7 @@ export type projectsUpdateWithoutWork_itemsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -2276,6 +2416,7 @@ export type projectsUncheckedUpdateWithoutWork_itemsInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2291,6 +2432,7 @@ export type projectsUncheckedUpdateWithoutWork_itemsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -2311,6 +2453,7 @@ export type projectsCreateWithoutWork_item_linksInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -2331,6 +2474,7 @@ export type projectsCreateWithoutWork_item_linksInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -2356,6 +2500,7 @@ export type projectsUncheckedCreateWithoutWork_item_linksInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2371,6 +2516,7 @@ export type projectsUncheckedCreateWithoutWork_item_linksInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -2407,6 +2553,7 @@ export type projectsUpdateWithoutWork_item_linksInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -2427,6 +2574,7 @@ export type projectsUpdateWithoutWork_item_linksInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -2452,6 +2600,7 @@ export type projectsUncheckedUpdateWithoutWork_item_linksInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2467,6 +2616,7 @@ export type projectsUncheckedUpdateWithoutWork_item_linksInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -2487,6 +2637,7 @@ export type projectsCreateWithoutBurndown_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -2507,6 +2658,7 @@ export type projectsCreateWithoutBurndown_rollupsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -2532,6 +2684,7 @@ export type projectsUncheckedCreateWithoutBurndown_rollupsInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2547,6 +2700,7 @@ export type projectsUncheckedCreateWithoutBurndown_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -2583,6 +2737,7 @@ export type projectsUpdateWithoutBurndown_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -2603,6 +2758,7 @@ export type projectsUpdateWithoutBurndown_rollupsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -2628,6 +2784,7 @@ export type projectsUncheckedUpdateWithoutBurndown_rollupsInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2643,6 +2800,7 @@ export type projectsUncheckedUpdateWithoutBurndown_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -2663,6 +2821,7 @@ export type projectsCreateWithoutContribution_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -2683,6 +2842,7 @@ export type projectsCreateWithoutContribution_rollupsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -2708,6 +2868,7 @@ export type projectsUncheckedCreateWithoutContribution_rollupsInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2723,6 +2884,7 @@ export type projectsUncheckedCreateWithoutContribution_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -2759,6 +2921,7 @@ export type projectsUpdateWithoutContribution_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -2779,6 +2942,7 @@ export type projectsUpdateWithoutContribution_rollupsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -2804,6 +2968,7 @@ export type projectsUncheckedUpdateWithoutContribution_rollupsInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2819,6 +2984,7 @@ export type projectsUncheckedUpdateWithoutContribution_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -2839,6 +3005,7 @@ export type projectsCreateWithoutChart_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -2859,6 +3026,7 @@ export type projectsCreateWithoutChart_rollupsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -2884,6 +3052,7 @@ export type projectsUncheckedCreateWithoutChart_rollupsInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -2899,6 +3068,7 @@ export type projectsUncheckedCreateWithoutChart_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -2935,6 +3105,7 @@ export type projectsUpdateWithoutChart_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -2955,6 +3126,7 @@ export type projectsUpdateWithoutChart_rollupsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -2980,6 +3152,7 @@ export type projectsUncheckedUpdateWithoutChart_rollupsInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -2995,6 +3168,7 @@ export type projectsUncheckedUpdateWithoutChart_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -3015,6 +3189,7 @@ export type projectsCreateWithoutChart_hierarchy_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3035,6 +3210,7 @@ export type projectsCreateWithoutChart_hierarchy_rollupsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -3060,6 +3236,7 @@ export type projectsUncheckedCreateWithoutChart_hierarchy_rollupsInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3075,6 +3252,7 @@ export type projectsUncheckedCreateWithoutChart_hierarchy_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -3111,6 +3289,7 @@ export type projectsUpdateWithoutChart_hierarchy_rollupsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -3131,6 +3310,7 @@ export type projectsUpdateWithoutChart_hierarchy_rollupsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -3156,6 +3336,7 @@ export type projectsUncheckedUpdateWithoutChart_hierarchy_rollupsInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -3171,6 +3352,7 @@ export type projectsUncheckedUpdateWithoutChart_hierarchy_rollupsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -3191,6 +3373,7 @@ export type projectsCreateWithoutWeekly_report_subscriptionsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3212,6 +3395,7 @@ export type projectsCreateWithoutWeekly_report_subscriptionsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
 
@@ -3236,6 +3420,7 @@ export type projectsUncheckedCreateWithoutWeekly_report_subscriptionsInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3252,6 +3437,7 @@ export type projectsUncheckedCreateWithoutWeekly_report_subscriptionsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
 
@@ -3287,6 +3473,7 @@ export type projectsUpdateWithoutWeekly_report_subscriptionsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -3308,6 +3495,7 @@ export type projectsUpdateWithoutWeekly_report_subscriptionsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
 
@@ -3332,6 +3520,7 @@ export type projectsUncheckedUpdateWithoutWeekly_report_subscriptionsInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -3348,6 +3537,7 @@ export type projectsUncheckedUpdateWithoutWeekly_report_subscriptionsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
@@ -3367,6 +3557,7 @@ export type projectsCreateWithoutWeekly_project_reportsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3388,6 +3579,7 @@ export type projectsCreateWithoutWeekly_project_reportsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
 }
 
@@ -3412,6 +3604,7 @@ export type projectsUncheckedCreateWithoutWeekly_project_reportsInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3428,6 +3621,7 @@ export type projectsUncheckedCreateWithoutWeekly_project_reportsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
 }
 
@@ -3463,6 +3657,7 @@ export type projectsUpdateWithoutWeekly_project_reportsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -3484,6 +3679,7 @@ export type projectsUpdateWithoutWeekly_project_reportsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
 }
 
@@ -3508,6 +3704,7 @@ export type projectsUncheckedUpdateWithoutWeekly_project_reportsInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -3524,6 +3721,7 @@ export type projectsUncheckedUpdateWithoutWeekly_project_reportsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
 }
 
@@ -3543,6 +3741,7 @@ export type projectsCreateWithoutPm_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3563,6 +3762,7 @@ export type projectsCreateWithoutPm_connectionInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -3587,6 +3787,7 @@ export type projectsUncheckedCreateWithoutPm_connectionInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3603,6 +3804,7 @@ export type projectsUncheckedCreateWithoutPm_connectionInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -3649,6 +3851,7 @@ export type projectsCreateWithoutVc_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3669,6 +3872,7 @@ export type projectsCreateWithoutVc_connectionInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -3693,6 +3897,7 @@ export type projectsUncheckedCreateWithoutVc_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3709,6 +3914,7 @@ export type projectsUncheckedCreateWithoutVc_connectionInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -3755,6 +3961,7 @@ export type projectsCreateWithoutFigma_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3775,6 +3982,7 @@ export type projectsCreateWithoutFigma_connectionInput = {
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -3800,6 +4008,7 @@ export type projectsUncheckedCreateWithoutFigma_connectionInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3815,6 +4024,7 @@ export type projectsUncheckedCreateWithoutFigma_connectionInput = {
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -3851,6 +4061,7 @@ export type projectsUpdateWithoutFigma_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -3871,6 +4082,7 @@ export type projectsUpdateWithoutFigma_connectionInput = {
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -3896,6 +4108,7 @@ export type projectsUncheckedUpdateWithoutFigma_connectionInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -3911,6 +4124,7 @@ export type projectsUncheckedUpdateWithoutFigma_connectionInput = {
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -3931,6 +4145,7 @@ export type projectsCreateWithoutFigma_oauth_attemptsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -3951,6 +4166,7 @@ export type projectsCreateWithoutFigma_oauth_attemptsInput = {
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -3976,6 +4192,7 @@ export type projectsUncheckedCreateWithoutFigma_oauth_attemptsInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -3991,6 +4208,7 @@ export type projectsUncheckedCreateWithoutFigma_oauth_attemptsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -4027,6 +4245,7 @@ export type projectsUpdateWithoutFigma_oauth_attemptsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -4047,6 +4266,7 @@ export type projectsUpdateWithoutFigma_oauth_attemptsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -4072,6 +4292,7 @@ export type projectsUncheckedUpdateWithoutFigma_oauth_attemptsInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -4087,6 +4308,191 @@ export type projectsUncheckedUpdateWithoutFigma_oauth_attemptsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
+  weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
+}
+
+export type projectsCreateWithoutFigma_oauth_operationsInput = {
+  id?: string
+  name: string
+  key: string
+  description?: string | null
+  start_date?: Date | string | null
+  end_date?: Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: $Enums.ProjectStatus
+  deleted_at?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
+  figma_binding_generation?: number
+  logo_url?: string | null
+  cover_picture?: string | null
+  owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
+  created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
+  updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
+  pm_connection?: Prisma.project_management_connectionsCreateNestedOneWithoutProjectsInput
+  vc_connection?: Prisma.version_control_connectionsCreateNestedOneWithoutProjectsInput
+  members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
+  teams?: Prisma.teamsCreateNestedManyWithoutProjectInput
+  sprints?: Prisma.sprintsCreateNestedManyWithoutProjectInput
+  work_items?: Prisma.work_itemsCreateNestedManyWithoutProjectInput
+  work_item_links?: Prisma.work_item_linksCreateNestedManyWithoutProjectInput
+  chart_rollups?: Prisma.work_item_chart_rollupsCreateNestedManyWithoutProjectInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsCreateNestedManyWithoutProjectInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsCreateNestedManyWithoutProjectInput
+  contribution_rollups?: Prisma.sprint_contribution_rollupsCreateNestedManyWithoutProjectInput
+  saved_views?: Prisma.saved_viewsCreateNestedManyWithoutProjectInput
+  integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
+  figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
+  figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
+  weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
+}
+
+export type projectsUncheckedCreateWithoutFigma_oauth_operationsInput = {
+  id?: string
+  name: string
+  key: string
+  description?: string | null
+  owner_id: string
+  start_date?: Date | string | null
+  end_date?: Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: $Enums.ProjectStatus
+  deleted_at?: Date | string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  pm_connection_id?: string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: string | null
+  figma_binding_generation?: number
+  logo_url?: string | null
+  cover_picture?: string | null
+  members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
+  teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
+  sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutProjectInput
+  work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutProjectInput
+  work_item_links?: Prisma.work_item_linksUncheckedCreateNestedManyWithoutProjectInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  contribution_rollups?: Prisma.sprint_contribution_rollupsUncheckedCreateNestedManyWithoutProjectInput
+  saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutProjectInput
+  integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
+  project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
+  figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
+  figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
+  weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
+}
+
+export type projectsCreateOrConnectWithoutFigma_oauth_operationsInput = {
+  where: Prisma.projectsWhereUniqueInput
+  create: Prisma.XOR<Prisma.projectsCreateWithoutFigma_oauth_operationsInput, Prisma.projectsUncheckedCreateWithoutFigma_oauth_operationsInput>
+}
+
+export type projectsUpsertWithoutFigma_oauth_operationsInput = {
+  update: Prisma.XOR<Prisma.projectsUpdateWithoutFigma_oauth_operationsInput, Prisma.projectsUncheckedUpdateWithoutFigma_oauth_operationsInput>
+  create: Prisma.XOR<Prisma.projectsCreateWithoutFigma_oauth_operationsInput, Prisma.projectsUncheckedCreateWithoutFigma_oauth_operationsInput>
+  where?: Prisma.projectsWhereInput
+}
+
+export type projectsUpdateToOneWithWhereWithoutFigma_oauth_operationsInput = {
+  where?: Prisma.projectsWhereInput
+  data: Prisma.XOR<Prisma.projectsUpdateWithoutFigma_oauth_operationsInput, Prisma.projectsUncheckedUpdateWithoutFigma_oauth_operationsInput>
+}
+
+export type projectsUpdateWithoutFigma_oauth_operationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
+  created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
+  updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
+  pm_connection?: Prisma.project_management_connectionsUpdateOneWithoutProjectsNestedInput
+  vc_connection?: Prisma.version_control_connectionsUpdateOneWithoutProjectsNestedInput
+  members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
+  teams?: Prisma.teamsUpdateManyWithoutProjectNestedInput
+  sprints?: Prisma.sprintsUpdateManyWithoutProjectNestedInput
+  work_items?: Prisma.work_itemsUpdateManyWithoutProjectNestedInput
+  work_item_links?: Prisma.work_item_linksUpdateManyWithoutProjectNestedInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUpdateManyWithoutProjectNestedInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUpdateManyWithoutProjectNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUpdateManyWithoutProjectNestedInput
+  contribution_rollups?: Prisma.sprint_contribution_rollupsUpdateManyWithoutProjectNestedInput
+  saved_views?: Prisma.saved_viewsUpdateManyWithoutProjectNestedInput
+  integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
+  figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
+  figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
+  weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
+}
+
+export type projectsUncheckedUpdateWithoutFigma_oauth_operationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  owner_id?: Prisma.StringFieldUpdateOperationsInput | string
+  start_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  end_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  attributes_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  workflow_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  status?: Prisma.EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  pm_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
+  teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
+  sprints?: Prisma.sprintsUncheckedUpdateManyWithoutProjectNestedInput
+  work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutProjectNestedInput
+  work_item_links?: Prisma.work_item_linksUncheckedUpdateManyWithoutProjectNestedInput
+  chart_rollups?: Prisma.work_item_chart_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  chart_hierarchy_rollups?: Prisma.work_item_chart_hierarchy_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  burndown_rollups?: Prisma.sprint_burndown_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  contribution_rollups?: Prisma.sprint_contribution_rollupsUncheckedUpdateManyWithoutProjectNestedInput
+  saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutProjectNestedInput
+  integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
+  project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
+  figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -4107,6 +4513,7 @@ export type projectsCreateWithoutSaved_viewsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -4127,6 +4534,7 @@ export type projectsCreateWithoutSaved_viewsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -4152,6 +4560,7 @@ export type projectsUncheckedCreateWithoutSaved_viewsInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -4167,6 +4576,7 @@ export type projectsUncheckedCreateWithoutSaved_viewsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -4203,6 +4613,7 @@ export type projectsUpdateWithoutSaved_viewsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -4223,6 +4634,7 @@ export type projectsUpdateWithoutSaved_viewsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -4248,6 +4660,7 @@ export type projectsUncheckedUpdateWithoutSaved_viewsInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -4263,6 +4676,7 @@ export type projectsUncheckedUpdateWithoutSaved_viewsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -4283,6 +4697,7 @@ export type projectsCreateWithoutProject_integrationsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -4303,6 +4718,7 @@ export type projectsCreateWithoutProject_integrationsInput = {
   integration_bindings?: Prisma.project_integration_bindingsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -4328,6 +4744,7 @@ export type projectsUncheckedCreateWithoutProject_integrationsInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -4343,6 +4760,7 @@ export type projectsUncheckedCreateWithoutProject_integrationsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -4379,6 +4797,7 @@ export type projectsUpdateWithoutProject_integrationsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -4399,6 +4818,7 @@ export type projectsUpdateWithoutProject_integrationsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -4424,6 +4844,7 @@ export type projectsUncheckedUpdateWithoutProject_integrationsInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -4439,6 +4860,7 @@ export type projectsUncheckedUpdateWithoutProject_integrationsInput = {
   integration_bindings?: Prisma.project_integration_bindingsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -4459,6 +4881,7 @@ export type projectsCreateWithoutIntegration_bindingsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
@@ -4479,6 +4902,7 @@ export type projectsCreateWithoutIntegration_bindingsInput = {
   project_integrations?: Prisma.integrationsCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsCreateNestedManyWithoutProjectInput
 }
@@ -4504,6 +4928,7 @@ export type projectsUncheckedCreateWithoutIntegration_bindingsInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
@@ -4519,6 +4944,7 @@ export type projectsUncheckedCreateWithoutIntegration_bindingsInput = {
   project_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutProjectInput
   figma_connection?: Prisma.figma_connectionsUncheckedCreateNestedOneWithoutProjectInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedCreateNestedManyWithoutProjectInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedCreateNestedManyWithoutProjectInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedCreateNestedManyWithoutProjectInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedCreateNestedManyWithoutProjectInput
 }
@@ -4555,6 +4981,7 @@ export type projectsUpdateWithoutIntegration_bindingsInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -4575,6 +5002,7 @@ export type projectsUpdateWithoutIntegration_bindingsInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -4600,6 +5028,7 @@ export type projectsUncheckedUpdateWithoutIntegration_bindingsInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -4615,6 +5044,7 @@ export type projectsUncheckedUpdateWithoutIntegration_bindingsInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -4639,6 +5069,7 @@ export type projectsCreateManyOwnerInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -4663,6 +5094,7 @@ export type projectsCreateManyCreated_by_userInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -4687,6 +5119,7 @@ export type projectsCreateManyUpdated_by_userInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -4707,6 +5140,7 @@ export type projectsUpdateWithoutOwnerInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
@@ -4727,6 +5161,7 @@ export type projectsUpdateWithoutOwnerInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -4751,6 +5186,7 @@ export type projectsUncheckedUpdateWithoutOwnerInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -4767,6 +5203,7 @@ export type projectsUncheckedUpdateWithoutOwnerInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -4791,6 +5228,7 @@ export type projectsUncheckedUpdateManyWithoutOwnerInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -4811,6 +5249,7 @@ export type projectsUpdateWithoutCreated_by_userInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -4831,6 +5270,7 @@ export type projectsUpdateWithoutCreated_by_userInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -4855,6 +5295,7 @@ export type projectsUncheckedUpdateWithoutCreated_by_userInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -4871,6 +5312,7 @@ export type projectsUncheckedUpdateWithoutCreated_by_userInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -4895,6 +5337,7 @@ export type projectsUncheckedUpdateManyWithoutCreated_by_userInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -4915,6 +5358,7 @@ export type projectsUpdateWithoutUpdated_by_userInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -4935,6 +5379,7 @@ export type projectsUpdateWithoutUpdated_by_userInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -4959,6 +5404,7 @@ export type projectsUncheckedUpdateWithoutUpdated_by_userInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -4975,6 +5421,7 @@ export type projectsUncheckedUpdateWithoutUpdated_by_userInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -4999,6 +5446,7 @@ export type projectsUncheckedUpdateManyWithoutUpdated_by_userInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -5023,6 +5471,7 @@ export type projectsCreateManyPm_connectionInput = {
   vc_connection_id?: string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -5043,6 +5492,7 @@ export type projectsUpdateWithoutPm_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -5063,6 +5513,7 @@ export type projectsUpdateWithoutPm_connectionInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -5087,6 +5538,7 @@ export type projectsUncheckedUpdateWithoutPm_connectionInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -5103,6 +5555,7 @@ export type projectsUncheckedUpdateWithoutPm_connectionInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -5127,6 +5580,7 @@ export type projectsUncheckedUpdateManyWithoutPm_connectionInput = {
   vc_connection_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -5151,6 +5605,7 @@ export type projectsCreateManyVc_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: string | null
+  figma_binding_generation?: number
   logo_url?: string | null
   cover_picture?: string | null
 }
@@ -5171,6 +5626,7 @@ export type projectsUpdateWithoutVc_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
@@ -5191,6 +5647,7 @@ export type projectsUpdateWithoutVc_connectionInput = {
   project_integrations?: Prisma.integrationsUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUpdateManyWithoutProjectNestedInput
 }
@@ -5215,6 +5672,7 @@ export type projectsUncheckedUpdateWithoutVc_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
@@ -5231,6 +5689,7 @@ export type projectsUncheckedUpdateWithoutVc_connectionInput = {
   project_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutProjectNestedInput
   figma_connection?: Prisma.figma_connectionsUncheckedUpdateOneWithoutProjectNestedInput
   figma_oauth_attempts?: Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput
+  figma_oauth_operations?: Prisma.figma_oauth_operationsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_report_subscriptions?: Prisma.weekly_project_report_subscriptionsUncheckedUpdateManyWithoutProjectNestedInput
   weekly_project_reports?: Prisma.weekly_project_reportsUncheckedUpdateManyWithoutProjectNestedInput
 }
@@ -5255,6 +5714,7 @@ export type projectsUncheckedUpdateManyWithoutVc_connectionInput = {
   pm_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   vc_external?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   figma_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  figma_binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -5278,6 +5738,7 @@ export type ProjectsCountOutputType = {
   integration_bindings: number
   project_integrations: number
   figma_oauth_attempts: number
+  figma_oauth_operations: number
   weekly_report_subscriptions: number
   weekly_project_reports: number
 }
@@ -5296,6 +5757,7 @@ export type ProjectsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensio
   integration_bindings?: boolean | ProjectsCountOutputTypeCountIntegration_bindingsArgs
   project_integrations?: boolean | ProjectsCountOutputTypeCountProject_integrationsArgs
   figma_oauth_attempts?: boolean | ProjectsCountOutputTypeCountFigma_oauth_attemptsArgs
+  figma_oauth_operations?: boolean | ProjectsCountOutputTypeCountFigma_oauth_operationsArgs
   weekly_report_subscriptions?: boolean | ProjectsCountOutputTypeCountWeekly_report_subscriptionsArgs
   weekly_project_reports?: boolean | ProjectsCountOutputTypeCountWeekly_project_reportsArgs
 }
@@ -5404,6 +5866,13 @@ export type ProjectsCountOutputTypeCountFigma_oauth_attemptsArgs<ExtArgs extends
 /**
  * ProjectsCountOutputType without action
  */
+export type ProjectsCountOutputTypeCountFigma_oauth_operationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.figma_oauth_operationsWhereInput
+}
+
+/**
+ * ProjectsCountOutputType without action
+ */
 export type ProjectsCountOutputTypeCountWeekly_report_subscriptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.weekly_project_report_subscriptionsWhereInput
 }
@@ -5437,6 +5906,7 @@ export type projectsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   vc_connection_id?: boolean
   vc_external?: boolean
   figma_url?: boolean
+  figma_binding_generation?: boolean
   logo_url?: boolean
   cover_picture?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
@@ -5458,6 +5928,7 @@ export type projectsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   project_integrations?: boolean | Prisma.projects$project_integrationsArgs<ExtArgs>
   figma_connection?: boolean | Prisma.projects$figma_connectionArgs<ExtArgs>
   figma_oauth_attempts?: boolean | Prisma.projects$figma_oauth_attemptsArgs<ExtArgs>
+  figma_oauth_operations?: boolean | Prisma.projects$figma_oauth_operationsArgs<ExtArgs>
   weekly_report_subscriptions?: boolean | Prisma.projects$weekly_report_subscriptionsArgs<ExtArgs>
   weekly_project_reports?: boolean | Prisma.projects$weekly_project_reportsArgs<ExtArgs>
   _count?: boolean | Prisma.ProjectsCountOutputTypeDefaultArgs<ExtArgs>
@@ -5484,6 +5955,7 @@ export type projectsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   vc_connection_id?: boolean
   vc_external?: boolean
   figma_url?: boolean
+  figma_binding_generation?: boolean
   logo_url?: boolean
   cover_picture?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
@@ -5514,6 +5986,7 @@ export type projectsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   vc_connection_id?: boolean
   vc_external?: boolean
   figma_url?: boolean
+  figma_binding_generation?: boolean
   logo_url?: boolean
   cover_picture?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
@@ -5544,11 +6017,12 @@ export type projectsSelectScalar = {
   vc_connection_id?: boolean
   vc_external?: boolean
   figma_url?: boolean
+  figma_binding_generation?: boolean
   logo_url?: boolean
   cover_picture?: boolean
 }
 
-export type projectsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "key" | "description" | "owner_id" | "start_date" | "end_date" | "attributes_config" | "workflow_config" | "status" | "deleted_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "pm_connection_id" | "pm_external" | "vc_connection_id" | "vc_external" | "figma_url" | "logo_url" | "cover_picture", ExtArgs["result"]["projects"]>
+export type projectsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "key" | "description" | "owner_id" | "start_date" | "end_date" | "attributes_config" | "workflow_config" | "status" | "deleted_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "pm_connection_id" | "pm_external" | "vc_connection_id" | "vc_external" | "figma_url" | "figma_binding_generation" | "logo_url" | "cover_picture", ExtArgs["result"]["projects"]>
 export type projectsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.projects$created_by_userArgs<ExtArgs>
@@ -5569,6 +6043,7 @@ export type projectsInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   project_integrations?: boolean | Prisma.projects$project_integrationsArgs<ExtArgs>
   figma_connection?: boolean | Prisma.projects$figma_connectionArgs<ExtArgs>
   figma_oauth_attempts?: boolean | Prisma.projects$figma_oauth_attemptsArgs<ExtArgs>
+  figma_oauth_operations?: boolean | Prisma.projects$figma_oauth_operationsArgs<ExtArgs>
   weekly_report_subscriptions?: boolean | Prisma.projects$weekly_report_subscriptionsArgs<ExtArgs>
   weekly_project_reports?: boolean | Prisma.projects$weekly_project_reportsArgs<ExtArgs>
   _count?: boolean | Prisma.ProjectsCountOutputTypeDefaultArgs<ExtArgs>
@@ -5610,6 +6085,7 @@ export type $projectsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     project_integrations: Prisma.$integrationsPayload<ExtArgs>[]
     figma_connection: Prisma.$figma_connectionsPayload<ExtArgs> | null
     figma_oauth_attempts: Prisma.$figma_oauth_attemptsPayload<ExtArgs>[]
+    figma_oauth_operations: Prisma.$figma_oauth_operationsPayload<ExtArgs>[]
     weekly_report_subscriptions: Prisma.$weekly_project_report_subscriptionsPayload<ExtArgs>[]
     weekly_project_reports: Prisma.$weekly_project_reportsPayload<ExtArgs>[]
   }
@@ -5649,6 +6125,10 @@ export type $projectsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
      * One saved Figma file, prototype, board, or slide URL for this project.
      */
     figma_url: string | null
+    /**
+     * Persistent intent fence for Figma connect, reconnect, and disconnect operations.
+     */
+    figma_binding_generation: number
     logo_url: string | null
     cover_picture: string | null
   }, ExtArgs["result"]["projects"]>
@@ -6064,6 +6544,7 @@ export interface Prisma__projectsClient<T, Null = never, ExtArgs extends runtime
   project_integrations<T extends Prisma.projects$project_integrationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$project_integrationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$integrationsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   figma_connection<T extends Prisma.projects$figma_connectionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$figma_connectionArgs<ExtArgs>>): Prisma.Prisma__figma_connectionsClient<runtime.Types.Result.GetResult<Prisma.$figma_connectionsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   figma_oauth_attempts<T extends Prisma.projects$figma_oauth_attemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$figma_oauth_attemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$figma_oauth_attemptsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  figma_oauth_operations<T extends Prisma.projects$figma_oauth_operationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$figma_oauth_operationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$figma_oauth_operationsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   weekly_report_subscriptions<T extends Prisma.projects$weekly_report_subscriptionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$weekly_report_subscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$weekly_project_report_subscriptionsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   weekly_project_reports<T extends Prisma.projects$weekly_project_reportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projects$weekly_project_reportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$weekly_project_reportsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -6115,6 +6596,7 @@ export interface projectsFieldRefs {
   readonly vc_connection_id: Prisma.FieldRef<"projects", 'String'>
   readonly vc_external: Prisma.FieldRef<"projects", 'Json'>
   readonly figma_url: Prisma.FieldRef<"projects", 'String'>
+  readonly figma_binding_generation: Prisma.FieldRef<"projects", 'Int'>
   readonly logo_url: Prisma.FieldRef<"projects", 'String'>
   readonly cover_picture: Prisma.FieldRef<"projects", 'String'>
 }
@@ -6922,6 +7404,30 @@ export type projects$figma_oauth_attemptsArgs<ExtArgs extends runtime.Types.Exte
   take?: number
   skip?: number
   distinct?: Prisma.Figma_oauth_attemptsScalarFieldEnum | Prisma.Figma_oauth_attemptsScalarFieldEnum[]
+}
+
+/**
+ * projects.figma_oauth_operations
+ */
+export type projects$figma_oauth_operationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the figma_oauth_operations
+   */
+  select?: Prisma.figma_oauth_operationsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the figma_oauth_operations
+   */
+  omit?: Prisma.figma_oauth_operationsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.figma_oauth_operationsInclude<ExtArgs> | null
+  where?: Prisma.figma_oauth_operationsWhereInput
+  orderBy?: Prisma.figma_oauth_operationsOrderByWithRelationInput | Prisma.figma_oauth_operationsOrderByWithRelationInput[]
+  cursor?: Prisma.figma_oauth_operationsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Figma_oauth_operationsScalarFieldEnum | Prisma.Figma_oauth_operationsScalarFieldEnum[]
 }
 
 /**

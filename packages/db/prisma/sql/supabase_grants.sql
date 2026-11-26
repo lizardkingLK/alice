@@ -27,6 +27,9 @@ REVOKE ALL ON TABLE public.version_control_connections FROM anon, authenticated;
 REVOKE ALL ON TABLE public.figma_oauth_credentials FROM anon, authenticated;
 REVOKE ALL ON TABLE public.figma_connections FROM anon, authenticated;
 REVOKE ALL ON TABLE public.figma_oauth_attempts FROM anon, authenticated;
+REVOKE ALL ON TABLE public.figma_oauth_operations FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON SEQUENCE public.figma_oauth_operations_journal_sequence_seq FROM PUBLIC, anon, authenticated;
+GRANT USAGE, SELECT ON SEQUENCE public.figma_oauth_operations_journal_sequence_seq TO postgres, service_role;
 REVOKE ALL ON TABLE public.chat_attachments FROM anon, authenticated;
 -- Chat agent catalogs: authenticated may SELECT (RLS); writes via service_role / API.
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.chat_tools FROM anon, authenticated;

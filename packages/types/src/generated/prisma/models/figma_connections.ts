@@ -21,14 +21,28 @@ export type figma_connectionsModel = runtime.Types.Result.DefaultSelection<Prism
 
 export type AggregateFigma_connections = {
   _count: Figma_connectionsCountAggregateOutputType | null
+  _avg: Figma_connectionsAvgAggregateOutputType | null
+  _sum: Figma_connectionsSumAggregateOutputType | null
   _min: Figma_connectionsMinAggregateOutputType | null
   _max: Figma_connectionsMaxAggregateOutputType | null
+}
+
+export type Figma_connectionsAvgAggregateOutputType = {
+  binding_generation: number | null
+  credential_token_version: number | null
+}
+
+export type Figma_connectionsSumAggregateOutputType = {
+  binding_generation: number | null
+  credential_token_version: number | null
 }
 
 export type Figma_connectionsMinAggregateOutputType = {
   id: string | null
   project_id: string | null
   credential_id: string | null
+  binding_generation: number | null
+  credential_token_version: number | null
   authorized_by: string | null
   figma_user_id: string | null
   access_token_enc: string | null
@@ -47,6 +61,8 @@ export type Figma_connectionsMaxAggregateOutputType = {
   id: string | null
   project_id: string | null
   credential_id: string | null
+  binding_generation: number | null
+  credential_token_version: number | null
   authorized_by: string | null
   figma_user_id: string | null
   access_token_enc: string | null
@@ -65,6 +81,8 @@ export type Figma_connectionsCountAggregateOutputType = {
   id: number
   project_id: number
   credential_id: number
+  binding_generation: number
+  credential_token_version: number
   authorized_by: number
   figma_user_id: number
   access_token_enc: number
@@ -81,10 +99,22 @@ export type Figma_connectionsCountAggregateOutputType = {
 }
 
 
+export type Figma_connectionsAvgAggregateInputType = {
+  binding_generation?: true
+  credential_token_version?: true
+}
+
+export type Figma_connectionsSumAggregateInputType = {
+  binding_generation?: true
+  credential_token_version?: true
+}
+
 export type Figma_connectionsMinAggregateInputType = {
   id?: true
   project_id?: true
   credential_id?: true
+  binding_generation?: true
+  credential_token_version?: true
   authorized_by?: true
   figma_user_id?: true
   access_token_enc?: true
@@ -103,6 +133,8 @@ export type Figma_connectionsMaxAggregateInputType = {
   id?: true
   project_id?: true
   credential_id?: true
+  binding_generation?: true
+  credential_token_version?: true
   authorized_by?: true
   figma_user_id?: true
   access_token_enc?: true
@@ -121,6 +153,8 @@ export type Figma_connectionsCountAggregateInputType = {
   id?: true
   project_id?: true
   credential_id?: true
+  binding_generation?: true
+  credential_token_version?: true
   authorized_by?: true
   figma_user_id?: true
   access_token_enc?: true
@@ -174,6 +208,18 @@ export type Figma_connectionsAggregateArgs<ExtArgs extends runtime.Types.Extensi
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: Figma_connectionsAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: Figma_connectionsSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: Figma_connectionsMinAggregateInputType
@@ -204,6 +250,8 @@ export type figma_connectionsGroupByArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   _count?: Figma_connectionsCountAggregateInputType | true
+  _avg?: Figma_connectionsAvgAggregateInputType
+  _sum?: Figma_connectionsSumAggregateInputType
   _min?: Figma_connectionsMinAggregateInputType
   _max?: Figma_connectionsMaxAggregateInputType
 }
@@ -212,6 +260,8 @@ export type Figma_connectionsGroupByOutputType = {
   id: string
   project_id: string
   credential_id: string | null
+  binding_generation: number
+  credential_token_version: number | null
   authorized_by: string
   figma_user_id: string
   access_token_enc: string
@@ -225,6 +275,8 @@ export type Figma_connectionsGroupByOutputType = {
   created_at: Date
   updated_at: Date
   _count: Figma_connectionsCountAggregateOutputType | null
+  _avg: Figma_connectionsAvgAggregateOutputType | null
+  _sum: Figma_connectionsSumAggregateOutputType | null
   _min: Figma_connectionsMinAggregateOutputType | null
   _max: Figma_connectionsMaxAggregateOutputType | null
 }
@@ -251,6 +303,8 @@ export type figma_connectionsWhereInput = {
   id?: Prisma.UuidFilter<"figma_connections"> | string
   project_id?: Prisma.UuidFilter<"figma_connections"> | string
   credential_id?: Prisma.UuidNullableFilter<"figma_connections"> | string | null
+  binding_generation?: Prisma.IntFilter<"figma_connections"> | number
+  credential_token_version?: Prisma.IntNullableFilter<"figma_connections"> | number | null
   authorized_by?: Prisma.UuidFilter<"figma_connections"> | string
   figma_user_id?: Prisma.StringFilter<"figma_connections"> | string
   access_token_enc?: Prisma.StringFilter<"figma_connections"> | string
@@ -272,6 +326,8 @@ export type figma_connectionsOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
   credential_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  binding_generation?: Prisma.SortOrder
+  credential_token_version?: Prisma.SortOrderInput | Prisma.SortOrder
   authorized_by?: Prisma.SortOrder
   figma_user_id?: Prisma.SortOrder
   access_token_enc?: Prisma.SortOrder
@@ -296,6 +352,8 @@ export type figma_connectionsWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.figma_connectionsWhereInput[]
   NOT?: Prisma.figma_connectionsWhereInput | Prisma.figma_connectionsWhereInput[]
   credential_id?: Prisma.UuidNullableFilter<"figma_connections"> | string | null
+  binding_generation?: Prisma.IntFilter<"figma_connections"> | number
+  credential_token_version?: Prisma.IntNullableFilter<"figma_connections"> | number | null
   authorized_by?: Prisma.UuidFilter<"figma_connections"> | string
   figma_user_id?: Prisma.StringFilter<"figma_connections"> | string
   access_token_enc?: Prisma.StringFilter<"figma_connections"> | string
@@ -317,6 +375,8 @@ export type figma_connectionsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
   credential_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  binding_generation?: Prisma.SortOrder
+  credential_token_version?: Prisma.SortOrderInput | Prisma.SortOrder
   authorized_by?: Prisma.SortOrder
   figma_user_id?: Prisma.SortOrder
   access_token_enc?: Prisma.SortOrder
@@ -330,8 +390,10 @@ export type figma_connectionsOrderByWithAggregationInput = {
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   _count?: Prisma.figma_connectionsCountOrderByAggregateInput
+  _avg?: Prisma.figma_connectionsAvgOrderByAggregateInput
   _max?: Prisma.figma_connectionsMaxOrderByAggregateInput
   _min?: Prisma.figma_connectionsMinOrderByAggregateInput
+  _sum?: Prisma.figma_connectionsSumOrderByAggregateInput
 }
 
 export type figma_connectionsScalarWhereWithAggregatesInput = {
@@ -341,6 +403,8 @@ export type figma_connectionsScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"figma_connections"> | string
   project_id?: Prisma.UuidWithAggregatesFilter<"figma_connections"> | string
   credential_id?: Prisma.UuidNullableWithAggregatesFilter<"figma_connections"> | string | null
+  binding_generation?: Prisma.IntWithAggregatesFilter<"figma_connections"> | number
+  credential_token_version?: Prisma.IntNullableWithAggregatesFilter<"figma_connections"> | number | null
   authorized_by?: Prisma.UuidWithAggregatesFilter<"figma_connections"> | string
   figma_user_id?: Prisma.StringWithAggregatesFilter<"figma_connections"> | string
   access_token_enc?: Prisma.StringWithAggregatesFilter<"figma_connections"> | string
@@ -357,6 +421,8 @@ export type figma_connectionsScalarWhereWithAggregatesInput = {
 
 export type figma_connectionsCreateInput = {
   id?: string
+  binding_generation?: number
+  credential_token_version?: number | null
   figma_user_id: string
   access_token_enc: string
   refresh_token_enc: string
@@ -377,6 +443,8 @@ export type figma_connectionsUncheckedCreateInput = {
   id?: string
   project_id: string
   credential_id?: string | null
+  binding_generation?: number
+  credential_token_version?: number | null
   authorized_by: string
   figma_user_id: string
   access_token_enc: string
@@ -393,6 +461,8 @@ export type figma_connectionsUncheckedCreateInput = {
 
 export type figma_connectionsUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  credential_token_version?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
   refresh_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -413,6 +483,8 @@ export type figma_connectionsUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
   credential_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  credential_token_version?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   authorized_by?: Prisma.StringFieldUpdateOperationsInput | string
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -431,6 +503,8 @@ export type figma_connectionsCreateManyInput = {
   id?: string
   project_id: string
   credential_id?: string | null
+  binding_generation?: number
+  credential_token_version?: number | null
   authorized_by: string
   figma_user_id: string
   access_token_enc: string
@@ -447,6 +521,8 @@ export type figma_connectionsCreateManyInput = {
 
 export type figma_connectionsUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  credential_token_version?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
   refresh_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -464,6 +540,8 @@ export type figma_connectionsUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
   credential_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  credential_token_version?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   authorized_by?: Prisma.StringFieldUpdateOperationsInput | string
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -497,6 +575,8 @@ export type figma_connectionsCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
   credential_id?: Prisma.SortOrder
+  binding_generation?: Prisma.SortOrder
+  credential_token_version?: Prisma.SortOrder
   authorized_by?: Prisma.SortOrder
   figma_user_id?: Prisma.SortOrder
   access_token_enc?: Prisma.SortOrder
@@ -511,10 +591,17 @@ export type figma_connectionsCountOrderByAggregateInput = {
   updated_at?: Prisma.SortOrder
 }
 
+export type figma_connectionsAvgOrderByAggregateInput = {
+  binding_generation?: Prisma.SortOrder
+  credential_token_version?: Prisma.SortOrder
+}
+
 export type figma_connectionsMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
   credential_id?: Prisma.SortOrder
+  binding_generation?: Prisma.SortOrder
+  credential_token_version?: Prisma.SortOrder
   authorized_by?: Prisma.SortOrder
   figma_user_id?: Prisma.SortOrder
   access_token_enc?: Prisma.SortOrder
@@ -533,6 +620,8 @@ export type figma_connectionsMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
   credential_id?: Prisma.SortOrder
+  binding_generation?: Prisma.SortOrder
+  credential_token_version?: Prisma.SortOrder
   authorized_by?: Prisma.SortOrder
   figma_user_id?: Prisma.SortOrder
   access_token_enc?: Prisma.SortOrder
@@ -545,6 +634,11 @@ export type figma_connectionsMinOrderByAggregateInput = {
   verification_error?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+}
+
+export type figma_connectionsSumOrderByAggregateInput = {
+  binding_generation?: Prisma.SortOrder
+  credential_token_version?: Prisma.SortOrder
 }
 
 export type figma_connectionsCreateNestedManyWithoutAuthorized_by_userInput = {
@@ -665,6 +759,8 @@ export type figma_connectionsUncheckedUpdateManyWithoutCredentialNestedInput = {
 
 export type figma_connectionsCreateWithoutAuthorized_by_userInput = {
   id?: string
+  binding_generation?: number
+  credential_token_version?: number | null
   figma_user_id: string
   access_token_enc: string
   refresh_token_enc: string
@@ -684,6 +780,8 @@ export type figma_connectionsUncheckedCreateWithoutAuthorized_by_userInput = {
   id?: string
   project_id: string
   credential_id?: string | null
+  binding_generation?: number
+  credential_token_version?: number | null
   figma_user_id: string
   access_token_enc: string
   refresh_token_enc: string
@@ -730,6 +828,8 @@ export type figma_connectionsScalarWhereInput = {
   id?: Prisma.UuidFilter<"figma_connections"> | string
   project_id?: Prisma.UuidFilter<"figma_connections"> | string
   credential_id?: Prisma.UuidNullableFilter<"figma_connections"> | string | null
+  binding_generation?: Prisma.IntFilter<"figma_connections"> | number
+  credential_token_version?: Prisma.IntNullableFilter<"figma_connections"> | number | null
   authorized_by?: Prisma.UuidFilter<"figma_connections"> | string
   figma_user_id?: Prisma.StringFilter<"figma_connections"> | string
   access_token_enc?: Prisma.StringFilter<"figma_connections"> | string
@@ -746,6 +846,8 @@ export type figma_connectionsScalarWhereInput = {
 
 export type figma_connectionsCreateWithoutProjectInput = {
   id?: string
+  binding_generation?: number
+  credential_token_version?: number | null
   figma_user_id: string
   access_token_enc: string
   refresh_token_enc: string
@@ -764,6 +866,8 @@ export type figma_connectionsCreateWithoutProjectInput = {
 export type figma_connectionsUncheckedCreateWithoutProjectInput = {
   id?: string
   credential_id?: string | null
+  binding_generation?: number
+  credential_token_version?: number | null
   authorized_by: string
   figma_user_id: string
   access_token_enc: string
@@ -796,6 +900,8 @@ export type figma_connectionsUpdateToOneWithWhereWithoutProjectInput = {
 
 export type figma_connectionsUpdateWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  credential_token_version?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
   refresh_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -814,6 +920,8 @@ export type figma_connectionsUpdateWithoutProjectInput = {
 export type figma_connectionsUncheckedUpdateWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   credential_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  credential_token_version?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   authorized_by?: Prisma.StringFieldUpdateOperationsInput | string
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -830,6 +938,8 @@ export type figma_connectionsUncheckedUpdateWithoutProjectInput = {
 
 export type figma_connectionsCreateWithoutCredentialInput = {
   id?: string
+  binding_generation?: number
+  credential_token_version?: number | null
   figma_user_id: string
   access_token_enc: string
   refresh_token_enc: string
@@ -848,6 +958,8 @@ export type figma_connectionsCreateWithoutCredentialInput = {
 export type figma_connectionsUncheckedCreateWithoutCredentialInput = {
   id?: string
   project_id: string
+  binding_generation?: number
+  credential_token_version?: number | null
   authorized_by: string
   figma_user_id: string
   access_token_enc: string
@@ -892,6 +1004,8 @@ export type figma_connectionsCreateManyAuthorized_by_userInput = {
   id?: string
   project_id: string
   credential_id?: string | null
+  binding_generation?: number
+  credential_token_version?: number | null
   figma_user_id: string
   access_token_enc: string
   refresh_token_enc: string
@@ -907,6 +1021,8 @@ export type figma_connectionsCreateManyAuthorized_by_userInput = {
 
 export type figma_connectionsUpdateWithoutAuthorized_by_userInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  credential_token_version?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
   refresh_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -926,6 +1042,8 @@ export type figma_connectionsUncheckedUpdateWithoutAuthorized_by_userInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
   credential_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  credential_token_version?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
   refresh_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -943,6 +1061,8 @@ export type figma_connectionsUncheckedUpdateManyWithoutAuthorized_by_userInput =
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
   credential_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  credential_token_version?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
   refresh_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -959,6 +1079,8 @@ export type figma_connectionsUncheckedUpdateManyWithoutAuthorized_by_userInput =
 export type figma_connectionsCreateManyCredentialInput = {
   id?: string
   project_id: string
+  binding_generation?: number
+  credential_token_version?: number | null
   authorized_by: string
   figma_user_id: string
   access_token_enc: string
@@ -975,6 +1097,8 @@ export type figma_connectionsCreateManyCredentialInput = {
 
 export type figma_connectionsUpdateWithoutCredentialInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  credential_token_version?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
   refresh_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -993,6 +1117,8 @@ export type figma_connectionsUpdateWithoutCredentialInput = {
 export type figma_connectionsUncheckedUpdateWithoutCredentialInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  credential_token_version?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   authorized_by?: Prisma.StringFieldUpdateOperationsInput | string
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1010,6 +1136,8 @@ export type figma_connectionsUncheckedUpdateWithoutCredentialInput = {
 export type figma_connectionsUncheckedUpdateManyWithoutCredentialInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  binding_generation?: Prisma.IntFieldUpdateOperationsInput | number
+  credential_token_version?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   authorized_by?: Prisma.StringFieldUpdateOperationsInput | string
   figma_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   access_token_enc?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1030,6 +1158,8 @@ export type figma_connectionsSelect<ExtArgs extends runtime.Types.Extensions.Int
   id?: boolean
   project_id?: boolean
   credential_id?: boolean
+  binding_generation?: boolean
+  credential_token_version?: boolean
   authorized_by?: boolean
   figma_user_id?: boolean
   access_token_enc?: boolean
@@ -1051,6 +1181,8 @@ export type figma_connectionsSelectCreateManyAndReturn<ExtArgs extends runtime.T
   id?: boolean
   project_id?: boolean
   credential_id?: boolean
+  binding_generation?: boolean
+  credential_token_version?: boolean
   authorized_by?: boolean
   figma_user_id?: boolean
   access_token_enc?: boolean
@@ -1072,6 +1204,8 @@ export type figma_connectionsSelectUpdateManyAndReturn<ExtArgs extends runtime.T
   id?: boolean
   project_id?: boolean
   credential_id?: boolean
+  binding_generation?: boolean
+  credential_token_version?: boolean
   authorized_by?: boolean
   figma_user_id?: boolean
   access_token_enc?: boolean
@@ -1093,6 +1227,8 @@ export type figma_connectionsSelectScalar = {
   id?: boolean
   project_id?: boolean
   credential_id?: boolean
+  binding_generation?: boolean
+  credential_token_version?: boolean
   authorized_by?: boolean
   figma_user_id?: boolean
   access_token_enc?: boolean
@@ -1107,7 +1243,7 @@ export type figma_connectionsSelectScalar = {
   updated_at?: boolean
 }
 
-export type figma_connectionsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "project_id" | "credential_id" | "authorized_by" | "figma_user_id" | "access_token_enc" | "refresh_token_enc" | "access_token_expires_at" | "scopes" | "verified_file_key" | "verified_file_name" | "verified_at" | "verification_error" | "created_at" | "updated_at", ExtArgs["result"]["figma_connections"]>
+export type figma_connectionsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "project_id" | "credential_id" | "binding_generation" | "credential_token_version" | "authorized_by" | "figma_user_id" | "access_token_enc" | "refresh_token_enc" | "access_token_expires_at" | "scopes" | "verified_file_key" | "verified_file_name" | "verified_at" | "verification_error" | "created_at" | "updated_at", ExtArgs["result"]["figma_connections"]>
 export type figma_connectionsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.projectsDefaultArgs<ExtArgs>
   credential?: boolean | Prisma.figma_connections$credentialArgs<ExtArgs>
@@ -1135,6 +1271,14 @@ export type $figma_connectionsPayload<ExtArgs extends runtime.Types.Extensions.I
     id: string
     project_id: string
     credential_id: string | null
+    /**
+     * Project binding intent that created this row. Independent of token refreshes.
+     */
+    binding_generation: number
+    /**
+     * Canonical token version copied into the legacy compatibility columns.
+     */
+    credential_token_version: number | null
     authorized_by: string
     figma_user_id: string
     access_token_enc: string
@@ -1576,6 +1720,8 @@ export interface figma_connectionsFieldRefs {
   readonly id: Prisma.FieldRef<"figma_connections", 'String'>
   readonly project_id: Prisma.FieldRef<"figma_connections", 'String'>
   readonly credential_id: Prisma.FieldRef<"figma_connections", 'String'>
+  readonly binding_generation: Prisma.FieldRef<"figma_connections", 'Int'>
+  readonly credential_token_version: Prisma.FieldRef<"figma_connections", 'Int'>
   readonly authorized_by: Prisma.FieldRef<"figma_connections", 'String'>
   readonly figma_user_id: Prisma.FieldRef<"figma_connections", 'String'>
   readonly access_token_enc: Prisma.FieldRef<"figma_connections", 'String'>

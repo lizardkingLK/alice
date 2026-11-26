@@ -298,12 +298,23 @@ export class FigmaRepository {
       if (!attempt) {
         return null;
       }
+      if (!attempt.code_verifier_enc) {
+        return null;
+      }
+      const codeVerifierEnc = attempt.code_verifier_enc;
 
       const consumed = await tx.figma_oauth_attempts.updateMany({
         where: { id: attempt.id, consumed_at: null },
         data: { consumed_at: new Date() },
       });
-      return consumed.count === 1 ? attempt : null;
+      return consumed.count === 1
+        ? {
+            id: attempt.id,
+            project_id: attempt.project_id,
+            user_id: attempt.user_id,
+            code_verifier_enc: codeVerifierEnc,
+          }
+        : null;
     });
   }
 

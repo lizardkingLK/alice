@@ -20,14 +20,26 @@ export type figma_oauth_attemptsModel = runtime.Types.Result.DefaultSelection<Pr
 
 export type AggregateFigma_oauth_attempts = {
   _count: Figma_oauth_attemptsCountAggregateOutputType | null
+  _avg: Figma_oauth_attemptsAvgAggregateOutputType | null
+  _sum: Figma_oauth_attemptsSumAggregateOutputType | null
   _min: Figma_oauth_attemptsMinAggregateOutputType | null
   _max: Figma_oauth_attemptsMaxAggregateOutputType | null
+}
+
+export type Figma_oauth_attemptsAvgAggregateOutputType = {
+  project_binding_generation: number | null
+}
+
+export type Figma_oauth_attemptsSumAggregateOutputType = {
+  project_binding_generation: number | null
 }
 
 export type Figma_oauth_attemptsMinAggregateOutputType = {
   id: string | null
   project_id: string | null
   user_id: string | null
+  oauth_app_key: string | null
+  project_binding_generation: number | null
   nonce_hash: string | null
   code_verifier_enc: string | null
   expires_at: Date | null
@@ -39,6 +51,8 @@ export type Figma_oauth_attemptsMaxAggregateOutputType = {
   id: string | null
   project_id: string | null
   user_id: string | null
+  oauth_app_key: string | null
+  project_binding_generation: number | null
   nonce_hash: string | null
   code_verifier_enc: string | null
   expires_at: Date | null
@@ -50,6 +64,8 @@ export type Figma_oauth_attemptsCountAggregateOutputType = {
   id: number
   project_id: number
   user_id: number
+  oauth_app_key: number
+  project_binding_generation: number
   nonce_hash: number
   code_verifier_enc: number
   expires_at: number
@@ -59,10 +75,20 @@ export type Figma_oauth_attemptsCountAggregateOutputType = {
 }
 
 
+export type Figma_oauth_attemptsAvgAggregateInputType = {
+  project_binding_generation?: true
+}
+
+export type Figma_oauth_attemptsSumAggregateInputType = {
+  project_binding_generation?: true
+}
+
 export type Figma_oauth_attemptsMinAggregateInputType = {
   id?: true
   project_id?: true
   user_id?: true
+  oauth_app_key?: true
+  project_binding_generation?: true
   nonce_hash?: true
   code_verifier_enc?: true
   expires_at?: true
@@ -74,6 +100,8 @@ export type Figma_oauth_attemptsMaxAggregateInputType = {
   id?: true
   project_id?: true
   user_id?: true
+  oauth_app_key?: true
+  project_binding_generation?: true
   nonce_hash?: true
   code_verifier_enc?: true
   expires_at?: true
@@ -85,6 +113,8 @@ export type Figma_oauth_attemptsCountAggregateInputType = {
   id?: true
   project_id?: true
   user_id?: true
+  oauth_app_key?: true
+  project_binding_generation?: true
   nonce_hash?: true
   code_verifier_enc?: true
   expires_at?: true
@@ -131,6 +161,18 @@ export type Figma_oauth_attemptsAggregateArgs<ExtArgs extends runtime.Types.Exte
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: Figma_oauth_attemptsAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: Figma_oauth_attemptsSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: Figma_oauth_attemptsMinAggregateInputType
@@ -161,6 +203,8 @@ export type figma_oauth_attemptsGroupByArgs<ExtArgs extends runtime.Types.Extens
   take?: number
   skip?: number
   _count?: Figma_oauth_attemptsCountAggregateInputType | true
+  _avg?: Figma_oauth_attemptsAvgAggregateInputType
+  _sum?: Figma_oauth_attemptsSumAggregateInputType
   _min?: Figma_oauth_attemptsMinAggregateInputType
   _max?: Figma_oauth_attemptsMaxAggregateInputType
 }
@@ -169,12 +213,16 @@ export type Figma_oauth_attemptsGroupByOutputType = {
   id: string
   project_id: string
   user_id: string
+  oauth_app_key: string | null
+  project_binding_generation: number | null
   nonce_hash: string
-  code_verifier_enc: string
+  code_verifier_enc: string | null
   expires_at: Date
   consumed_at: Date | null
   created_at: Date
   _count: Figma_oauth_attemptsCountAggregateOutputType | null
+  _avg: Figma_oauth_attemptsAvgAggregateOutputType | null
+  _sum: Figma_oauth_attemptsSumAggregateOutputType | null
   _min: Figma_oauth_attemptsMinAggregateOutputType | null
   _max: Figma_oauth_attemptsMaxAggregateOutputType | null
 }
@@ -201,26 +249,32 @@ export type figma_oauth_attemptsWhereInput = {
   id?: Prisma.UuidFilter<"figma_oauth_attempts"> | string
   project_id?: Prisma.UuidFilter<"figma_oauth_attempts"> | string
   user_id?: Prisma.UuidFilter<"figma_oauth_attempts"> | string
+  oauth_app_key?: Prisma.StringNullableFilter<"figma_oauth_attempts"> | string | null
+  project_binding_generation?: Prisma.IntNullableFilter<"figma_oauth_attempts"> | number | null
   nonce_hash?: Prisma.StringFilter<"figma_oauth_attempts"> | string
-  code_verifier_enc?: Prisma.StringFilter<"figma_oauth_attempts"> | string
+  code_verifier_enc?: Prisma.StringNullableFilter<"figma_oauth_attempts"> | string | null
   expires_at?: Prisma.DateTimeFilter<"figma_oauth_attempts"> | Date | string
   consumed_at?: Prisma.DateTimeNullableFilter<"figma_oauth_attempts"> | Date | string | null
   created_at?: Prisma.DateTimeFilter<"figma_oauth_attempts"> | Date | string
   project?: Prisma.XOR<Prisma.ProjectsScalarRelationFilter, Prisma.projectsWhereInput>
   user?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
+  operation?: Prisma.XOR<Prisma.Figma_oauth_operationsNullableScalarRelationFilter, Prisma.figma_oauth_operationsWhereInput> | null
 }
 
 export type figma_oauth_attemptsOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
+  oauth_app_key?: Prisma.SortOrderInput | Prisma.SortOrder
+  project_binding_generation?: Prisma.SortOrderInput | Prisma.SortOrder
   nonce_hash?: Prisma.SortOrder
-  code_verifier_enc?: Prisma.SortOrder
+  code_verifier_enc?: Prisma.SortOrderInput | Prisma.SortOrder
   expires_at?: Prisma.SortOrder
   consumed_at?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   project?: Prisma.projectsOrderByWithRelationInput
   user?: Prisma.usersOrderByWithRelationInput
+  operation?: Prisma.figma_oauth_operationsOrderByWithRelationInput
 }
 
 export type figma_oauth_attemptsWhereUniqueInput = Prisma.AtLeast<{
@@ -231,26 +285,33 @@ export type figma_oauth_attemptsWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.figma_oauth_attemptsWhereInput | Prisma.figma_oauth_attemptsWhereInput[]
   project_id?: Prisma.UuidFilter<"figma_oauth_attempts"> | string
   user_id?: Prisma.UuidFilter<"figma_oauth_attempts"> | string
-  code_verifier_enc?: Prisma.StringFilter<"figma_oauth_attempts"> | string
+  oauth_app_key?: Prisma.StringNullableFilter<"figma_oauth_attempts"> | string | null
+  project_binding_generation?: Prisma.IntNullableFilter<"figma_oauth_attempts"> | number | null
+  code_verifier_enc?: Prisma.StringNullableFilter<"figma_oauth_attempts"> | string | null
   expires_at?: Prisma.DateTimeFilter<"figma_oauth_attempts"> | Date | string
   consumed_at?: Prisma.DateTimeNullableFilter<"figma_oauth_attempts"> | Date | string | null
   created_at?: Prisma.DateTimeFilter<"figma_oauth_attempts"> | Date | string
   project?: Prisma.XOR<Prisma.ProjectsScalarRelationFilter, Prisma.projectsWhereInput>
   user?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
+  operation?: Prisma.XOR<Prisma.Figma_oauth_operationsNullableScalarRelationFilter, Prisma.figma_oauth_operationsWhereInput> | null
 }, "id" | "nonce_hash">
 
 export type figma_oauth_attemptsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
+  oauth_app_key?: Prisma.SortOrderInput | Prisma.SortOrder
+  project_binding_generation?: Prisma.SortOrderInput | Prisma.SortOrder
   nonce_hash?: Prisma.SortOrder
-  code_verifier_enc?: Prisma.SortOrder
+  code_verifier_enc?: Prisma.SortOrderInput | Prisma.SortOrder
   expires_at?: Prisma.SortOrder
   consumed_at?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   _count?: Prisma.figma_oauth_attemptsCountOrderByAggregateInput
+  _avg?: Prisma.figma_oauth_attemptsAvgOrderByAggregateInput
   _max?: Prisma.figma_oauth_attemptsMaxOrderByAggregateInput
   _min?: Prisma.figma_oauth_attemptsMinOrderByAggregateInput
+  _sum?: Prisma.figma_oauth_attemptsSumOrderByAggregateInput
 }
 
 export type figma_oauth_attemptsScalarWhereWithAggregatesInput = {
@@ -260,8 +321,10 @@ export type figma_oauth_attemptsScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"figma_oauth_attempts"> | string
   project_id?: Prisma.UuidWithAggregatesFilter<"figma_oauth_attempts"> | string
   user_id?: Prisma.UuidWithAggregatesFilter<"figma_oauth_attempts"> | string
+  oauth_app_key?: Prisma.StringNullableWithAggregatesFilter<"figma_oauth_attempts"> | string | null
+  project_binding_generation?: Prisma.IntNullableWithAggregatesFilter<"figma_oauth_attempts"> | number | null
   nonce_hash?: Prisma.StringWithAggregatesFilter<"figma_oauth_attempts"> | string
-  code_verifier_enc?: Prisma.StringWithAggregatesFilter<"figma_oauth_attempts"> | string
+  code_verifier_enc?: Prisma.StringNullableWithAggregatesFilter<"figma_oauth_attempts"> | string | null
   expires_at?: Prisma.DateTimeWithAggregatesFilter<"figma_oauth_attempts"> | Date | string
   consumed_at?: Prisma.DateTimeNullableWithAggregatesFilter<"figma_oauth_attempts"> | Date | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"figma_oauth_attempts"> | Date | string
@@ -269,54 +332,68 @@ export type figma_oauth_attemptsScalarWhereWithAggregatesInput = {
 
 export type figma_oauth_attemptsCreateInput = {
   id?: string
+  oauth_app_key?: string | null
+  project_binding_generation?: number | null
   nonce_hash: string
-  code_verifier_enc: string
+  code_verifier_enc?: string | null
   expires_at: Date | string
   consumed_at?: Date | string | null
   created_at?: Date | string
   project: Prisma.projectsCreateNestedOneWithoutFigma_oauth_attemptsInput
   user: Prisma.usersCreateNestedOneWithoutFigma_oauth_attemptsInput
+  operation?: Prisma.figma_oauth_operationsCreateNestedOneWithoutOauth_attemptInput
 }
 
 export type figma_oauth_attemptsUncheckedCreateInput = {
   id?: string
   project_id: string
   user_id: string
+  oauth_app_key?: string | null
+  project_binding_generation?: number | null
   nonce_hash: string
-  code_verifier_enc: string
+  code_verifier_enc?: string | null
   expires_at: Date | string
   consumed_at?: Date | string | null
   created_at?: Date | string
+  operation?: Prisma.figma_oauth_operationsUncheckedCreateNestedOneWithoutOauth_attemptInput
 }
 
 export type figma_oauth_attemptsUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  oauth_app_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project_binding_generation?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   nonce_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  code_verifier_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  code_verifier_enc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.projectsUpdateOneRequiredWithoutFigma_oauth_attemptsNestedInput
   user?: Prisma.usersUpdateOneRequiredWithoutFigma_oauth_attemptsNestedInput
+  operation?: Prisma.figma_oauth_operationsUpdateOneWithoutOauth_attemptNestedInput
 }
 
 export type figma_oauth_attemptsUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  oauth_app_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project_binding_generation?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   nonce_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  code_verifier_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  code_verifier_enc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  operation?: Prisma.figma_oauth_operationsUncheckedUpdateOneWithoutOauth_attemptNestedInput
 }
 
 export type figma_oauth_attemptsCreateManyInput = {
   id?: string
   project_id: string
   user_id: string
+  oauth_app_key?: string | null
+  project_binding_generation?: number | null
   nonce_hash: string
-  code_verifier_enc: string
+  code_verifier_enc?: string | null
   expires_at: Date | string
   consumed_at?: Date | string | null
   created_at?: Date | string
@@ -324,8 +401,10 @@ export type figma_oauth_attemptsCreateManyInput = {
 
 export type figma_oauth_attemptsUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  oauth_app_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project_binding_generation?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   nonce_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  code_verifier_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  code_verifier_enc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -335,8 +414,10 @@ export type figma_oauth_attemptsUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  oauth_app_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project_binding_generation?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   nonce_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  code_verifier_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  code_verifier_enc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -356,6 +437,8 @@ export type figma_oauth_attemptsCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
+  oauth_app_key?: Prisma.SortOrder
+  project_binding_generation?: Prisma.SortOrder
   nonce_hash?: Prisma.SortOrder
   code_verifier_enc?: Prisma.SortOrder
   expires_at?: Prisma.SortOrder
@@ -363,10 +446,16 @@ export type figma_oauth_attemptsCountOrderByAggregateInput = {
   created_at?: Prisma.SortOrder
 }
 
+export type figma_oauth_attemptsAvgOrderByAggregateInput = {
+  project_binding_generation?: Prisma.SortOrder
+}
+
 export type figma_oauth_attemptsMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
+  oauth_app_key?: Prisma.SortOrder
+  project_binding_generation?: Prisma.SortOrder
   nonce_hash?: Prisma.SortOrder
   code_verifier_enc?: Prisma.SortOrder
   expires_at?: Prisma.SortOrder
@@ -378,11 +467,22 @@ export type figma_oauth_attemptsMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   project_id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
+  oauth_app_key?: Prisma.SortOrder
+  project_binding_generation?: Prisma.SortOrder
   nonce_hash?: Prisma.SortOrder
   code_verifier_enc?: Prisma.SortOrder
   expires_at?: Prisma.SortOrder
   consumed_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
+}
+
+export type figma_oauth_attemptsSumOrderByAggregateInput = {
+  project_binding_generation?: Prisma.SortOrder
+}
+
+export type Figma_oauth_attemptsNullableScalarRelationFilter = {
+  is?: Prisma.figma_oauth_attemptsWhereInput | null
+  isNot?: Prisma.figma_oauth_attemptsWhereInput | null
 }
 
 export type figma_oauth_attemptsCreateNestedManyWithoutUserInput = {
@@ -469,24 +569,46 @@ export type figma_oauth_attemptsUncheckedUpdateManyWithoutProjectNestedInput = {
   deleteMany?: Prisma.figma_oauth_attemptsScalarWhereInput | Prisma.figma_oauth_attemptsScalarWhereInput[]
 }
 
+export type figma_oauth_attemptsCreateNestedOneWithoutOperationInput = {
+  create?: Prisma.XOR<Prisma.figma_oauth_attemptsCreateWithoutOperationInput, Prisma.figma_oauth_attemptsUncheckedCreateWithoutOperationInput>
+  connectOrCreate?: Prisma.figma_oauth_attemptsCreateOrConnectWithoutOperationInput
+  connect?: Prisma.figma_oauth_attemptsWhereUniqueInput
+}
+
+export type figma_oauth_attemptsUpdateOneWithoutOperationNestedInput = {
+  create?: Prisma.XOR<Prisma.figma_oauth_attemptsCreateWithoutOperationInput, Prisma.figma_oauth_attemptsUncheckedCreateWithoutOperationInput>
+  connectOrCreate?: Prisma.figma_oauth_attemptsCreateOrConnectWithoutOperationInput
+  upsert?: Prisma.figma_oauth_attemptsUpsertWithoutOperationInput
+  disconnect?: Prisma.figma_oauth_attemptsWhereInput | boolean
+  delete?: Prisma.figma_oauth_attemptsWhereInput | boolean
+  connect?: Prisma.figma_oauth_attemptsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.figma_oauth_attemptsUpdateToOneWithWhereWithoutOperationInput, Prisma.figma_oauth_attemptsUpdateWithoutOperationInput>, Prisma.figma_oauth_attemptsUncheckedUpdateWithoutOperationInput>
+}
+
 export type figma_oauth_attemptsCreateWithoutUserInput = {
   id?: string
+  oauth_app_key?: string | null
+  project_binding_generation?: number | null
   nonce_hash: string
-  code_verifier_enc: string
+  code_verifier_enc?: string | null
   expires_at: Date | string
   consumed_at?: Date | string | null
   created_at?: Date | string
   project: Prisma.projectsCreateNestedOneWithoutFigma_oauth_attemptsInput
+  operation?: Prisma.figma_oauth_operationsCreateNestedOneWithoutOauth_attemptInput
 }
 
 export type figma_oauth_attemptsUncheckedCreateWithoutUserInput = {
   id?: string
   project_id: string
+  oauth_app_key?: string | null
+  project_binding_generation?: number | null
   nonce_hash: string
-  code_verifier_enc: string
+  code_verifier_enc?: string | null
   expires_at: Date | string
   consumed_at?: Date | string | null
   created_at?: Date | string
+  operation?: Prisma.figma_oauth_operationsUncheckedCreateNestedOneWithoutOauth_attemptInput
 }
 
 export type figma_oauth_attemptsCreateOrConnectWithoutUserInput = {
@@ -522,8 +644,10 @@ export type figma_oauth_attemptsScalarWhereInput = {
   id?: Prisma.UuidFilter<"figma_oauth_attempts"> | string
   project_id?: Prisma.UuidFilter<"figma_oauth_attempts"> | string
   user_id?: Prisma.UuidFilter<"figma_oauth_attempts"> | string
+  oauth_app_key?: Prisma.StringNullableFilter<"figma_oauth_attempts"> | string | null
+  project_binding_generation?: Prisma.IntNullableFilter<"figma_oauth_attempts"> | number | null
   nonce_hash?: Prisma.StringFilter<"figma_oauth_attempts"> | string
-  code_verifier_enc?: Prisma.StringFilter<"figma_oauth_attempts"> | string
+  code_verifier_enc?: Prisma.StringNullableFilter<"figma_oauth_attempts"> | string | null
   expires_at?: Prisma.DateTimeFilter<"figma_oauth_attempts"> | Date | string
   consumed_at?: Prisma.DateTimeNullableFilter<"figma_oauth_attempts"> | Date | string | null
   created_at?: Prisma.DateTimeFilter<"figma_oauth_attempts"> | Date | string
@@ -531,22 +655,28 @@ export type figma_oauth_attemptsScalarWhereInput = {
 
 export type figma_oauth_attemptsCreateWithoutProjectInput = {
   id?: string
+  oauth_app_key?: string | null
+  project_binding_generation?: number | null
   nonce_hash: string
-  code_verifier_enc: string
+  code_verifier_enc?: string | null
   expires_at: Date | string
   consumed_at?: Date | string | null
   created_at?: Date | string
   user: Prisma.usersCreateNestedOneWithoutFigma_oauth_attemptsInput
+  operation?: Prisma.figma_oauth_operationsCreateNestedOneWithoutOauth_attemptInput
 }
 
 export type figma_oauth_attemptsUncheckedCreateWithoutProjectInput = {
   id?: string
   user_id: string
+  oauth_app_key?: string | null
+  project_binding_generation?: number | null
   nonce_hash: string
-  code_verifier_enc: string
+  code_verifier_enc?: string | null
   expires_at: Date | string
   consumed_at?: Date | string | null
   created_at?: Date | string
+  operation?: Prisma.figma_oauth_operationsUncheckedCreateNestedOneWithoutOauth_attemptInput
 }
 
 export type figma_oauth_attemptsCreateOrConnectWithoutProjectInput = {
@@ -575,11 +705,81 @@ export type figma_oauth_attemptsUpdateManyWithWhereWithoutProjectInput = {
   data: Prisma.XOR<Prisma.figma_oauth_attemptsUpdateManyMutationInput, Prisma.figma_oauth_attemptsUncheckedUpdateManyWithoutProjectInput>
 }
 
+export type figma_oauth_attemptsCreateWithoutOperationInput = {
+  id?: string
+  oauth_app_key?: string | null
+  project_binding_generation?: number | null
+  nonce_hash: string
+  code_verifier_enc?: string | null
+  expires_at: Date | string
+  consumed_at?: Date | string | null
+  created_at?: Date | string
+  project: Prisma.projectsCreateNestedOneWithoutFigma_oauth_attemptsInput
+  user: Prisma.usersCreateNestedOneWithoutFigma_oauth_attemptsInput
+}
+
+export type figma_oauth_attemptsUncheckedCreateWithoutOperationInput = {
+  id?: string
+  project_id: string
+  user_id: string
+  oauth_app_key?: string | null
+  project_binding_generation?: number | null
+  nonce_hash: string
+  code_verifier_enc?: string | null
+  expires_at: Date | string
+  consumed_at?: Date | string | null
+  created_at?: Date | string
+}
+
+export type figma_oauth_attemptsCreateOrConnectWithoutOperationInput = {
+  where: Prisma.figma_oauth_attemptsWhereUniqueInput
+  create: Prisma.XOR<Prisma.figma_oauth_attemptsCreateWithoutOperationInput, Prisma.figma_oauth_attemptsUncheckedCreateWithoutOperationInput>
+}
+
+export type figma_oauth_attemptsUpsertWithoutOperationInput = {
+  update: Prisma.XOR<Prisma.figma_oauth_attemptsUpdateWithoutOperationInput, Prisma.figma_oauth_attemptsUncheckedUpdateWithoutOperationInput>
+  create: Prisma.XOR<Prisma.figma_oauth_attemptsCreateWithoutOperationInput, Prisma.figma_oauth_attemptsUncheckedCreateWithoutOperationInput>
+  where?: Prisma.figma_oauth_attemptsWhereInput
+}
+
+export type figma_oauth_attemptsUpdateToOneWithWhereWithoutOperationInput = {
+  where?: Prisma.figma_oauth_attemptsWhereInput
+  data: Prisma.XOR<Prisma.figma_oauth_attemptsUpdateWithoutOperationInput, Prisma.figma_oauth_attemptsUncheckedUpdateWithoutOperationInput>
+}
+
+export type figma_oauth_attemptsUpdateWithoutOperationInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  oauth_app_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project_binding_generation?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  nonce_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  code_verifier_enc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  project?: Prisma.projectsUpdateOneRequiredWithoutFigma_oauth_attemptsNestedInput
+  user?: Prisma.usersUpdateOneRequiredWithoutFigma_oauth_attemptsNestedInput
+}
+
+export type figma_oauth_attemptsUncheckedUpdateWithoutOperationInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  oauth_app_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project_binding_generation?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  nonce_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  code_verifier_enc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type figma_oauth_attemptsCreateManyUserInput = {
   id?: string
   project_id: string
+  oauth_app_key?: string | null
+  project_binding_generation?: number | null
   nonce_hash: string
-  code_verifier_enc: string
+  code_verifier_enc?: string | null
   expires_at: Date | string
   consumed_at?: Date | string | null
   created_at?: Date | string
@@ -587,29 +787,37 @@ export type figma_oauth_attemptsCreateManyUserInput = {
 
 export type figma_oauth_attemptsUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  oauth_app_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project_binding_generation?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   nonce_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  code_verifier_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  code_verifier_enc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.projectsUpdateOneRequiredWithoutFigma_oauth_attemptsNestedInput
+  operation?: Prisma.figma_oauth_operationsUpdateOneWithoutOauth_attemptNestedInput
 }
 
 export type figma_oauth_attemptsUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  oauth_app_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project_binding_generation?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   nonce_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  code_verifier_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  code_verifier_enc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  operation?: Prisma.figma_oauth_operationsUncheckedUpdateOneWithoutOauth_attemptNestedInput
 }
 
 export type figma_oauth_attemptsUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   project_id?: Prisma.StringFieldUpdateOperationsInput | string
+  oauth_app_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project_binding_generation?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   nonce_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  code_verifier_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  code_verifier_enc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -618,8 +826,10 @@ export type figma_oauth_attemptsUncheckedUpdateManyWithoutUserInput = {
 export type figma_oauth_attemptsCreateManyProjectInput = {
   id?: string
   user_id: string
+  oauth_app_key?: string | null
+  project_binding_generation?: number | null
   nonce_hash: string
-  code_verifier_enc: string
+  code_verifier_enc?: string | null
   expires_at: Date | string
   consumed_at?: Date | string | null
   created_at?: Date | string
@@ -627,29 +837,37 @@ export type figma_oauth_attemptsCreateManyProjectInput = {
 
 export type figma_oauth_attemptsUpdateWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  oauth_app_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project_binding_generation?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   nonce_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  code_verifier_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  code_verifier_enc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.usersUpdateOneRequiredWithoutFigma_oauth_attemptsNestedInput
+  operation?: Prisma.figma_oauth_operationsUpdateOneWithoutOauth_attemptNestedInput
 }
 
 export type figma_oauth_attemptsUncheckedUpdateWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  oauth_app_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project_binding_generation?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   nonce_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  code_verifier_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  code_verifier_enc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  operation?: Prisma.figma_oauth_operationsUncheckedUpdateOneWithoutOauth_attemptNestedInput
 }
 
 export type figma_oauth_attemptsUncheckedUpdateManyWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  oauth_app_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  project_binding_generation?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   nonce_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  code_verifier_enc?: Prisma.StringFieldUpdateOperationsInput | string
+  code_verifier_enc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -661,6 +879,8 @@ export type figma_oauth_attemptsSelect<ExtArgs extends runtime.Types.Extensions.
   id?: boolean
   project_id?: boolean
   user_id?: boolean
+  oauth_app_key?: boolean
+  project_binding_generation?: boolean
   nonce_hash?: boolean
   code_verifier_enc?: boolean
   expires_at?: boolean
@@ -668,12 +888,15 @@ export type figma_oauth_attemptsSelect<ExtArgs extends runtime.Types.Extensions.
   created_at?: boolean
   project?: boolean | Prisma.projectsDefaultArgs<ExtArgs>
   user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
+  operation?: boolean | Prisma.figma_oauth_attempts$operationArgs<ExtArgs>
 }, ExtArgs["result"]["figma_oauth_attempts"]>
 
 export type figma_oauth_attemptsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   project_id?: boolean
   user_id?: boolean
+  oauth_app_key?: boolean
+  project_binding_generation?: boolean
   nonce_hash?: boolean
   code_verifier_enc?: boolean
   expires_at?: boolean
@@ -687,6 +910,8 @@ export type figma_oauth_attemptsSelectUpdateManyAndReturn<ExtArgs extends runtim
   id?: boolean
   project_id?: boolean
   user_id?: boolean
+  oauth_app_key?: boolean
+  project_binding_generation?: boolean
   nonce_hash?: boolean
   code_verifier_enc?: boolean
   expires_at?: boolean
@@ -700,6 +925,8 @@ export type figma_oauth_attemptsSelectScalar = {
   id?: boolean
   project_id?: boolean
   user_id?: boolean
+  oauth_app_key?: boolean
+  project_binding_generation?: boolean
   nonce_hash?: boolean
   code_verifier_enc?: boolean
   expires_at?: boolean
@@ -707,10 +934,11 @@ export type figma_oauth_attemptsSelectScalar = {
   created_at?: boolean
 }
 
-export type figma_oauth_attemptsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "project_id" | "user_id" | "nonce_hash" | "code_verifier_enc" | "expires_at" | "consumed_at" | "created_at", ExtArgs["result"]["figma_oauth_attempts"]>
+export type figma_oauth_attemptsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "project_id" | "user_id" | "oauth_app_key" | "project_binding_generation" | "nonce_hash" | "code_verifier_enc" | "expires_at" | "consumed_at" | "created_at", ExtArgs["result"]["figma_oauth_attempts"]>
 export type figma_oauth_attemptsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.projectsDefaultArgs<ExtArgs>
   user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
+  operation?: boolean | Prisma.figma_oauth_attempts$operationArgs<ExtArgs>
 }
 export type figma_oauth_attemptsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.projectsDefaultArgs<ExtArgs>
@@ -726,13 +954,16 @@ export type $figma_oauth_attemptsPayload<ExtArgs extends runtime.Types.Extension
   objects: {
     project: Prisma.$projectsPayload<ExtArgs>
     user: Prisma.$usersPayload<ExtArgs>
+    operation: Prisma.$figma_oauth_operationsPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     project_id: string
     user_id: string
+    oauth_app_key: string | null
+    project_binding_generation: number | null
     nonce_hash: string
-    code_verifier_enc: string
+    code_verifier_enc: string | null
     expires_at: Date
     consumed_at: Date | null
     created_at: Date
@@ -1132,6 +1363,7 @@ export interface Prisma__figma_oauth_attemptsClient<T, Null = never, ExtArgs ext
   readonly [Symbol.toStringTag]: "PrismaPromise"
   project<T extends Prisma.projectsDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.projectsDefaultArgs<ExtArgs>>): Prisma.Prisma__projectsClient<runtime.Types.Result.GetResult<Prisma.$projectsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   user<T extends Prisma.usersDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.usersDefaultArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  operation<T extends Prisma.figma_oauth_attempts$operationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.figma_oauth_attempts$operationArgs<ExtArgs>>): Prisma.Prisma__figma_oauth_operationsClient<runtime.Types.Result.GetResult<Prisma.$figma_oauth_operationsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1164,6 +1396,8 @@ export interface figma_oauth_attemptsFieldRefs {
   readonly id: Prisma.FieldRef<"figma_oauth_attempts", 'String'>
   readonly project_id: Prisma.FieldRef<"figma_oauth_attempts", 'String'>
   readonly user_id: Prisma.FieldRef<"figma_oauth_attempts", 'String'>
+  readonly oauth_app_key: Prisma.FieldRef<"figma_oauth_attempts", 'String'>
+  readonly project_binding_generation: Prisma.FieldRef<"figma_oauth_attempts", 'Int'>
   readonly nonce_hash: Prisma.FieldRef<"figma_oauth_attempts", 'String'>
   readonly code_verifier_enc: Prisma.FieldRef<"figma_oauth_attempts", 'String'>
   readonly expires_at: Prisma.FieldRef<"figma_oauth_attempts", 'DateTime'>
@@ -1567,6 +1801,25 @@ export type figma_oauth_attemptsDeleteManyArgs<ExtArgs extends runtime.Types.Ext
    * Limit how many figma_oauth_attempts to delete.
    */
   limit?: number
+}
+
+/**
+ * figma_oauth_attempts.operation
+ */
+export type figma_oauth_attempts$operationArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the figma_oauth_operations
+   */
+  select?: Prisma.figma_oauth_operationsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the figma_oauth_operations
+   */
+  omit?: Prisma.figma_oauth_operationsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.figma_oauth_operationsInclude<ExtArgs> | null
+  where?: Prisma.figma_oauth_operationsWhereInput
 }
 
 /**

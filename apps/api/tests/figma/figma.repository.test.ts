@@ -8,6 +8,8 @@ const {
   connectionUpsertMock,
   credentialCreateMock,
   credentialFindUniqueMock,
+  attemptFindFirstMock,
+  attemptUpdateManyMock,
   queryRawMock,
   transactionMock,
 } = vi.hoisted(() => ({
@@ -17,6 +19,8 @@ const {
   connectionUpsertMock: vi.fn(),
   credentialCreateMock: vi.fn(),
   credentialFindUniqueMock: vi.fn(),
+  attemptFindFirstMock: vi.fn(),
+  attemptUpdateManyMock: vi.fn(),
   queryRawMock: vi.fn(),
   transactionMock: vi.fn(),
 }));
@@ -30,6 +34,10 @@ const transactionClient = {
   figma_connections: {
     findUnique: transactionConnectionFindUniqueMock,
     upsert: connectionUpsertMock,
+  },
+  figma_oauth_attempts: {
+    findFirst: attemptFindFirstMock,
+    updateMany: attemptUpdateManyMock,
   },
 };
 
@@ -166,6 +174,48 @@ describe('FigmaRepository shared credentials', () => {
         },
       })
     );
+  });
+
+  it('preserves existing attempt consumption for a non-null verifier', async () => {
+    attemptFindFirstMock.mockResolvedValue({
+      id: 'attempt-1',
+      project_id: 'project-1',
+      user_id: 'alice-user-1',
+      code_verifier_enc: 'v1:encrypted-verifier',
+    });
+    attemptUpdateManyMock.mockResolvedValue({ count: 1 });
+
+    await expect(
+      repository.consumeOAuthAttempt({
+        projectId: 'project-1',
+        userId: 'alice-user-1',
+        nonceHash: 'nonce-hash',
+      })
+    ).resolves.toMatchObject({
+      id: 'attempt-1',
+      code_verifier_enc: 'v1:encrypted-verifier',
+    });
+
+    expect(attemptUpdateManyMock).toHaveBeenCalledOnce();
+  });
+
+  it('rejects an unexpected null verifier without consuming the attempt', async () => {
+    attemptFindFirstMock.mockResolvedValue({
+      id: 'attempt-1',
+      project_id: 'project-1',
+      user_id: 'alice-user-1',
+      code_verifier_enc: null,
+    });
+
+    await expect(
+      repository.consumeOAuthAttempt({
+        projectId: 'project-1',
+        userId: 'alice-user-1',
+        nonceHash: 'nonce-hash',
+      })
+    ).resolves.toBeNull();
+
+    expect(attemptUpdateManyMock).not.toHaveBeenCalled();
   });
 
   it('prefers canonical tokens while preserving project verification fields', async () => {

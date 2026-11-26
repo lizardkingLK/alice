@@ -171,6 +171,13 @@ export type figma_connections = Prisma.figma_connectionsModel
  */
 export type figma_oauth_attempts = Prisma.figma_oauth_attemptsModel
 /**
+ * Model figma_oauth_operations
+ * Durable coordination journal for future Figma token operations.
+ * Phase 4C defines storage only; no runtime coordinator writes this table yet.
+ * `journal_sequence` is a local stale-worker fence, never evidence of provider issuance order.
+ */
+export type figma_oauth_operations = Prisma.figma_oauth_operationsModel
+/**
  * Model chat_conversations
  * 
  */
