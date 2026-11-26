@@ -482,7 +482,9 @@ export class FigmaRepository {
 
   /**
    * Binds a project to an existing credential without changing that credential.
-   * The caller must complete the existing project-level authorization check.
+   * The caller must have both project access and trusted, server-side OAuth
+   * authorization for this exact credential. Phase 3 does not expose this
+   * method through the service until that callback context exists.
    */
   upsertProjectCredentialBinding(
     input: UpsertFigmaProjectBindingInput
@@ -500,6 +502,10 @@ export class FigmaRepository {
         throw new FigmaOAuthAppMismatchError();
       }
       await acquireAdvisoryLock(tx, projectBindingLockKey(input.projectId));
+      const existingBinding = await tx.figma_connections.findUnique({
+        where: { project_id: input.projectId },
+        select: { credential_id: true },
+      });
 
       const legacyCredentialData = {
         figma_user_id: credential.figma_user_id,
@@ -508,20 +514,27 @@ export class FigmaRepository {
         access_token_expires_at: credential.access_token_expires_at,
         scopes: credential.scopes,
       };
-      const verification = input.verification
-        ? verificationData(input.verification)
-        : undefined;
+      const credentialChanged = Boolean(
+        existingBinding && existingBinding.credential_id !== credential.id
+      );
+      const clearedVerification = verificationData({
+        verifiedFileKey: null,
+        verifiedFileName: null,
+        verifiedAt: null,
+        verificationError: null,
+      });
+      let verification: ReturnType<typeof verificationData> | undefined;
+      if (input.verification) {
+        verification = verificationData(input.verification);
+      } else if (credentialChanged) {
+        verification = clearedVerification;
+      }
       const createData = {
         project_id: input.projectId,
         credential_id: credential.id,
         authorized_by: input.authorizedBy,
         ...legacyCredentialData,
-        ...(verification ?? {
-          verified_file_key: null,
-          verified_file_name: null,
-          verified_at: null,
-          verification_error: null,
-        }),
+        ...(verification ?? clearedVerification),
       };
       const updateData = {
         credential_id: credential.id,

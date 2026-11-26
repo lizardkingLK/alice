@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   connectionDeleteManyMock,
   connectionFindUniqueMock,
+  transactionConnectionFindUniqueMock,
   connectionUpsertMock,
   credentialCreateMock,
   credentialFindUniqueMock,
@@ -12,6 +13,7 @@ const {
 } = vi.hoisted(() => ({
   connectionDeleteManyMock: vi.fn(),
   connectionFindUniqueMock: vi.fn(),
+  transactionConnectionFindUniqueMock: vi.fn(),
   connectionUpsertMock: vi.fn(),
   credentialCreateMock: vi.fn(),
   credentialFindUniqueMock: vi.fn(),
@@ -26,6 +28,7 @@ const transactionClient = {
     findUnique: credentialFindUniqueMock,
   },
   figma_connections: {
+    findUnique: transactionConnectionFindUniqueMock,
     upsert: connectionUpsertMock,
   },
 };
@@ -140,6 +143,7 @@ describe('FigmaRepository shared credentials', () => {
         operation(transactionClient)
     );
     queryRawMock.mockResolvedValue([{ pg_advisory_xact_lock: null }]);
+    transactionConnectionFindUniqueMock.mockResolvedValue(null);
   });
 
   it('finds one canonical credential by OAuth app and Figma user identity', async () => {
@@ -269,6 +273,101 @@ describe('FigmaRepository shared credentials', () => {
     expect(connectionUpsertMock.mock.calls[1]?.[0].where).toEqual({
       project_id: 'project-2',
     });
+  });
+
+  it('clears project verification atomically when the credential changes', async () => {
+    credentialFindUniqueMock.mockResolvedValue(
+      fullCredential('credential-2', 'figma-user-2')
+    );
+    transactionConnectionFindUniqueMock.mockResolvedValue({
+      credential_id: 'credential-1',
+    });
+    connectionUpsertMock.mockResolvedValue(publicConnection('project-1'));
+
+    await repository.upsertProjectCredentialBinding({
+      credentialId: 'credential-2',
+      expectedOAuthAppKey: 'figma-app:client-1',
+      projectId: 'project-1',
+      authorizedBy: 'alice-user-1',
+    });
+
+    expect(transactionConnectionFindUniqueMock).toHaveBeenCalledWith({
+      where: { project_id: 'project-1' },
+      select: { credential_id: true },
+    });
+    expect(queryRawMock.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      transactionConnectionFindUniqueMock.mock.invocationCallOrder[0] ?? 0
+    );
+    expect(connectionUpsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          credential_id: 'credential-2',
+          verified_file_key: null,
+          verified_file_name: null,
+          verified_at: null,
+          verification_error: null,
+        }),
+      })
+    );
+    const update = connectionUpsertMock.mock.calls[0]?.[0].update;
+    expect(update).not.toHaveProperty('figma_url');
+  });
+
+  it('preserves applicable verification when the same credential remains bound', async () => {
+    credentialFindUniqueMock.mockResolvedValue(fullCredential());
+    transactionConnectionFindUniqueMock.mockResolvedValue({
+      credential_id: 'credential-1',
+    });
+    connectionUpsertMock.mockResolvedValue(publicConnection('project-1'));
+
+    await repository.upsertProjectCredentialBinding({
+      credentialId: 'credential-1',
+      expectedOAuthAppKey: 'figma-app:client-1',
+      projectId: 'project-1',
+      authorizedBy: 'alice-user-1',
+    });
+
+    const update = connectionUpsertMock.mock.calls[0]?.[0].update;
+    expect(update).not.toHaveProperty('verified_file_key');
+    expect(update).not.toHaveProperty('verified_file_name');
+    expect(update).not.toHaveProperty('verified_at');
+    expect(update).not.toHaveProperty('verification_error');
+    expect(update).not.toHaveProperty('figma_url');
+  });
+
+  it('stores fresh verification supplied after a credential change', async () => {
+    credentialFindUniqueMock.mockResolvedValue(
+      fullCredential('credential-2', 'figma-user-2')
+    );
+    transactionConnectionFindUniqueMock.mockResolvedValue({
+      credential_id: 'credential-1',
+    });
+    connectionUpsertMock.mockResolvedValue(publicConnection('project-1'));
+
+    await repository.upsertProjectCredentialBinding({
+      credentialId: 'credential-2',
+      expectedOAuthAppKey: 'figma-app:client-1',
+      projectId: 'project-1',
+      authorizedBy: 'alice-user-1',
+      verification: {
+        verifiedFileKey: 'file-key-2',
+        verifiedFileName: 'New account design',
+        verifiedAt: now,
+        verificationError: null,
+      },
+    });
+
+    expect(connectionUpsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          credential_id: 'credential-2',
+          verified_file_key: 'file-key-2',
+          verified_file_name: 'New account design',
+          verified_at: now,
+          verification_error: null,
+        }),
+      })
+    );
   });
 
   it('rejects binding a credential from another OAuth app', async () => {

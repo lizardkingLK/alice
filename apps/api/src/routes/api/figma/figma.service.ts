@@ -16,6 +16,7 @@ import {
   FigmaRepository,
   type FigmaConnectionFull,
   type FigmaConnectionPublic,
+  type FigmaEffectiveConnection,
   type FigmaVerificationFields,
 } from './figma.repository';
 import {
@@ -44,6 +45,11 @@ type FigmaConfig = {
   redirectUri: string;
 };
 
+export type FigmaSharedProjectCredential = {
+  connection: FigmaEffectiveConnection;
+  identity: 'canonical' | 'legacy_unverified';
+};
+
 function requireFigmaConfig(): FigmaConfig {
   const clientId = env.FIGMA_CLIENT_ID;
   const clientSecret = env.FIGMA_CLIENT_SECRET;
@@ -58,6 +64,17 @@ function requireFigmaConfig(): FigmaConfig {
 
 function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex');
+}
+
+/**
+ * Stable, non-secret identity for the configured Figma OAuth application.
+ * The client id is never persisted or returned directly.
+ */
+export function figmaOAuthAppKey(clientId = env.FIGMA_CLIENT_ID): string {
+  if (!clientId) {
+    throw new Error('Figma OAuth is not configured. Set FIGMA_CLIENT_ID.');
+  }
+  return `figma:sha256:${sha256(clientId)}`;
 }
 
 function pkceChallenge(verifier: string): string {
@@ -206,6 +223,46 @@ export class FigmaService {
   async disconnect(actorId: string, projectId: string): Promise<void> {
     await this.requireCanManageProject(actorId, projectId);
     const deleted = await this.figmaRepository.deleteConnection(projectId);
+    if (!deleted) {
+      throw new Error('Figma connection not found.');
+    }
+  }
+
+  /**
+   * Phase 3 preparation only; no production route calls this method. Shared
+   * credential creation, identity lookup, and rebinding remain unavailable
+   * until a future callback can provide trusted server-side OAuth context.
+   * Reads are limited to the authorized project's existing binding. Legacy
+   * rows remain unverified and are never silently promoted.
+   */
+  async findSharedCredentialForProject(
+    actorId: string,
+    projectId: string
+  ): Promise<FigmaSharedProjectCredential | null> {
+    await this.requireCanManageProject(actorId, projectId);
+    const connection =
+      await this.figmaRepository.findCredentialByProjectBinding(
+        projectId,
+        figmaOAuthAppKey()
+      );
+    if (!connection) {
+      return null;
+    }
+    return {
+      connection,
+      identity: connection.oauth_app_verified
+        ? 'canonical'
+        : 'legacy_unverified',
+    };
+  }
+
+  /** Removes one project binding without deleting the shared credential. */
+  async disconnectProjectFromCanonicalCredential(
+    actorId: string,
+    projectId: string
+  ): Promise<void> {
+    await this.requireCanManageProject(actorId, projectId);
+    const deleted = await this.figmaRepository.deleteProjectBinding(projectId);
     if (!deleted) {
       throw new Error('Figma connection not found.');
     }
