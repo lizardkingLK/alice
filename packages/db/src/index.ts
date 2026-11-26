@@ -11,4 +11,15 @@ export {
   encryptSecretWithKey,
   isEncryptedSecret,
 } from './secret-crypto.js';
+export {
+  PostgresAdvisoryLockConnectionLostError,
+  PostgresAdvisoryLockConnectionModeError,
+  PostgresAdvisoryLockTimeoutError,
+  PostgresAdvisoryUnlockError,
+  postgresAdvisoryLockConnectionMode,
+  withPostgresSessionAdvisoryLock,
+  type PostgresAdvisoryLockConnectionMode,
+  type PostgresSessionAdvisoryLockOperation,
+  type PostgresSessionAdvisoryLockOptions,
+} from './postgres-advisory-lock.js';
 export { withBusyRetry, type WithBusyRetryOptions } from './with-busy-retry.js';
