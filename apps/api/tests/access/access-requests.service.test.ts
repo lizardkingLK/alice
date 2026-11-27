@@ -382,7 +382,12 @@ describe('AccessRequestsService.grantAccessRequest', () => {
       async (args: { where?: { id?: { in?: string[] } } }) => {
         const ids = args.where?.id?.in ?? [];
         const all = [
-          { id: 'proj-1', key: 'ACME', name: 'Acme Project' },
+          {
+            id: 'proj-1',
+            key: 'ACME',
+            name: 'Acme Project',
+            logo_url: null,
+          },
           { id: 'proj-2', key: 'BETA', name: 'Beta Project' },
         ];
         return all.filter((row) => ids.includes(row.id));
@@ -437,7 +442,7 @@ describe('AccessRequestsService.grantAccessRequest', () => {
     expect(sendProjectMemberEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: 'guest@partner.com',
-        subject: "You've been added to Acme Project in Alice",
+        subject: 'Added to Acme Project on Alice',
         idempotencyKey: expect.stringMatching(/^project-member-added:/),
       })
     );

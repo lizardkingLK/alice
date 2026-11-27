@@ -314,6 +314,8 @@ See [USER_MEMBERSHIP_STATUS.md](../features/users/USER_MEMBERSHIP_STATUS.md) for
 
 > **Email template requirement.** The Invite template must use the server-readable `token_hash` link, **not** the default `{{ .ConfirmationURL }}` (which uses the implicit hash-fragment flow the server callback can't read). See §12 for the exact string and the allowlist / Site URL setup.
 >
+> **Deliverability.** Auth invites (and recovery mail) go through Supabase’s mailer unless you configure **custom SMTP** (Authentication → SMTP) with a verified domain (e.g. Resend). The default sender is frequently spam-foldered; product notification mail via Resend does **not** cover Auth invite templates.
+>
 > **Legacy fallback.** `RecoveryHashGuard` (`apps/web/app/forgot-password/_components/recovery-hash-guard.tsx`) catches old implicit-flow links that still land on `/forgot-password#access_token=…`: it restores the session client-side via `setSession` and forwards to `/reset-password` instead of showing the bogus expired error.
 
 ### Activate / deactivate

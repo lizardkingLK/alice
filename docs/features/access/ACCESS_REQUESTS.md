@@ -70,9 +70,13 @@ Deep link (from inbox or row action):
 | `granted`      | **Edit** — revoke warning + shared memberships; **Deny** in dialog |
 | `denied`       | **Edit** — re-grant (same grant UI as pending)                     |
 
-The registry **Projects** column shows requested keys. Prefill intersects
-requested keys with the reviewing admin’s accessible projects; inaccessible
-requested keys are listed as omitted.
+The registry **Projects** column shows requested keys. The grant dialog lists
+**all** of the reviewing admin’s accessible projects as Grant/Member checkboxes
+(fixed scroll height), with requested keys pre-checked when they overlap.
+Requested keys that are missing (or not accessible) are called out with a
+**Create project** link to `/projects?create=1` (opens the create form in a new
+tab). After project create, the projects dropdown cache is invalidated so a
+refreshed Users page shows the new project in the grant list.
 
 ### Renew-before-grant (UI)
 

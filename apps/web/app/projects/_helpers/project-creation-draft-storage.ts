@@ -6,12 +6,14 @@ import {
   setLocalStorageJson,
 } from '@/lib/local-storage';
 
-export const PROJECT_CREATION_DRAFT_VERSION = 4 as const;
+export const PROJECT_CREATION_DRAFT_VERSION = 5 as const;
+const V4_DRAFT_VERSION = 4 as const;
 const V3_DRAFT_VERSION = 3 as const;
 const V2_DRAFT_VERSION = 2 as const;
 const V1_DRAFT_VERSION = 1 as const;
 
 const STORAGE_PREFIX = `alice:project-creation-draft:v${PROJECT_CREATION_DRAFT_VERSION}:`;
+const V4_STORAGE_PREFIX = `alice:project-creation-draft:v${V4_DRAFT_VERSION}:`;
 const V3_STORAGE_PREFIX = `alice:project-creation-draft:v${V3_DRAFT_VERSION}:`;
 const V2_STORAGE_PREFIX = `alice:project-creation-draft:v${V2_DRAFT_VERSION}:`;
 const V1_STORAGE_PREFIX = `alice:project-creation-draft:v${V1_DRAFT_VERSION}:`;
@@ -100,11 +102,21 @@ const draftBodySchema = z.object({
     teamManagerId: z.string(),
     teamTechStack: z.string(),
     teamMemberIds: z.array(z.string().min(1)),
+    projectMemberIds: z.array(z.string().min(1)),
   }),
 });
 
 const projectCreationDraftSchema = draftBodySchema.extend({
   version: z.literal(PROJECT_CREATION_DRAFT_VERSION),
+});
+
+const legacyTeamSchema = z.object({
+  createInitialTeam: z.boolean(),
+  teamName: z.string(),
+  teamDescription: z.string(),
+  teamManagerId: z.string(),
+  teamTechStack: z.string(),
+  teamMemberIds: z.array(z.string().min(1)),
 });
 
 const legacyBasicInfoSchema = z.object({
@@ -116,7 +128,19 @@ const legacySectionsSchema = z.object({
   imports: draftBodySchema.shape.imports,
   sourceControl: draftBodySchema.shape.sourceControl,
   sprint: draftBodySchema.shape.sprint,
-  team: draftBodySchema.shape.team,
+  team: legacyTeamSchema,
+});
+
+/** v4: members still only via selectedOwnerId on basicInfo. */
+const v4DraftSchema = z.object({
+  version: z.literal(V4_DRAFT_VERSION),
+  currentStep: wizardStepSchema,
+  basicInfo: draftBodySchema.shape.basicInfo,
+  imports: draftBodySchema.shape.imports,
+  sourceControl: draftBodySchema.shape.sourceControl,
+  integrations: draftBodySchema.shape.integrations,
+  sprint: draftBodySchema.shape.sprint,
+  team: legacyTeamSchema,
 });
 
 /** v3: same wizard steps as v4, but types stored as key strings only. */
@@ -176,6 +200,10 @@ export function projectCreationDraftStorageKey(userId: string): string {
   return `${STORAGE_PREFIX}${userId}`;
 }
 
+function v4ProjectCreationDraftStorageKey(userId: string): string {
+  return `${V4_STORAGE_PREFIX}${userId}`;
+}
+
 function v3ProjectCreationDraftStorageKey(userId: string): string {
   return `${V3_STORAGE_PREFIX}${userId}`;
 }
@@ -229,6 +257,26 @@ export function migrateV2DraftStep(
   return 5;
 }
 
+function withProjectMemberIds(
+  team: z.infer<typeof legacyTeamSchema>,
+  selectedOwnerId: string
+): ProjectCreationDraft['team'] {
+  return {
+    ...team,
+    projectMemberIds: selectedOwnerId ? [selectedOwnerId] : [],
+  };
+}
+
+function migrateV4Draft(
+  draft: z.infer<typeof v4DraftSchema>
+): ProjectCreationDraft {
+  return {
+    ...draft,
+    version: PROJECT_CREATION_DRAFT_VERSION,
+    team: withProjectMemberIds(draft.team, draft.basicInfo.selectedOwnerId),
+  };
+}
+
 function migrateV3Draft(
   draft: z.infer<typeof v3DraftSchema>
 ): ProjectCreationDraft {
@@ -236,6 +284,7 @@ function migrateV3Draft(
     ...draft,
     version: PROJECT_CREATION_DRAFT_VERSION,
     basicInfo: migrateLegacyBasicInfo(draft.basicInfo),
+    team: withProjectMemberIds(draft.team, draft.basicInfo.selectedOwnerId),
   };
 }
 
@@ -267,6 +316,11 @@ export function validateProjectCreationDraft(
   const parsed = projectCreationDraftSchema.safeParse(value);
   if (parsed.success) {
     return parsed.data;
+  }
+
+  const v4 = v4DraftSchema.safeParse(value);
+  if (v4.success) {
+    return migrateV4Draft(v4.data);
   }
 
   const v3 = v3DraftSchema.safeParse(value);
@@ -321,6 +375,7 @@ export function readProjectCreationDraft(
   }
 
   const legacyKeys = [
+    v4ProjectCreationDraftStorageKey(userId),
     v3ProjectCreationDraftStorageKey(userId),
     v2ProjectCreationDraftStorageKey(userId),
     v1ProjectCreationDraftStorageKey(userId),
@@ -352,6 +407,9 @@ export function clearProjectCreationDraft(
   const clearedCurrent = removeLocalStorageItem(
     projectCreationDraftStorageKey(userId)
   );
+  const clearedV4 = removeLocalStorageItem(
+    v4ProjectCreationDraftStorageKey(userId)
+  );
   const clearedV3 = removeLocalStorageItem(
     v3ProjectCreationDraftStorageKey(userId)
   );
@@ -361,5 +419,5 @@ export function clearProjectCreationDraft(
   const clearedV1 = removeLocalStorageItem(
     v1ProjectCreationDraftStorageKey(userId)
   );
-  return clearedCurrent || clearedV3 || clearedV2 || clearedV1;
+  return clearedCurrent || clearedV4 || clearedV3 || clearedV2 || clearedV1;
 }

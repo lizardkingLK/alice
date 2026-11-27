@@ -61,6 +61,7 @@ import {
   type Project,
   type CreateProjectInput,
 } from '@/app/projects/_services/projects.mutations.client';
+import { invalidateProjectDropdownCache } from '@/app/projects/_services/projects.cache.actions.server';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import { cn } from '@repo/ui/lib/utils';
@@ -107,7 +108,7 @@ const DRAFT_STEP_LABELS = [
   'Types',
   'Integrations',
   'Sprint',
-  'Team',
+  'Members',
 ] as const;
 
 function formatDateForInput(dateString?: string | null) {
@@ -183,7 +184,10 @@ function validateStep1({
   const projectKeyError = validateProjectKey(key);
   if (projectKeyError) return projectKeyError;
 
-  if (!selectedOwnerId) return 'Project Owner is required.';
+  // Create mode picks owner on the Members step.
+  if (isEditMode && !selectedOwnerId) {
+    return 'Project Owner is required.';
+  }
 
   const startDateError = validateDateField(
     'Start',
@@ -205,6 +209,42 @@ function validateStep1({
   if (endDateError) return endDateError;
 
   return null;
+}
+
+function validateMembersStep({
+  projectMemberIds,
+  selectedOwnerId,
+  users,
+  createInitialTeam,
+  teamName,
+  teamManagerId,
+}: {
+  projectMemberIds: string[];
+  selectedOwnerId: string;
+  users: User[];
+  createInitialTeam: boolean;
+  teamName: string;
+  teamManagerId: string;
+}): string | null {
+  if (projectMemberIds.length === 0) {
+    return 'Select at least one project member.';
+  }
+  if (!selectedOwnerId) {
+    return 'Mark one member as the project owner.';
+  }
+  if (!projectMemberIds.includes(selectedOwnerId)) {
+    return 'The project owner must be included in the members list.';
+  }
+
+  const selectedUsers = users.filter((user) =>
+    projectMemberIds.includes(user.id)
+  );
+  const owner = selectedUsers.find((user) => user.id === selectedOwnerId);
+  if (!owner || owner.role !== 'manager') {
+    return 'Project owner must be a manager.';
+  }
+
+  return validateTeamStep(createInitialTeam, teamName, teamManagerId);
 }
 
 function validateTypesStep(
@@ -337,6 +377,8 @@ function getStepError(
     createInitialTeam: boolean;
     teamName: string;
     teamManagerId: string;
+    projectMemberIds: string[];
+    users: User[];
   }
 ): string | null {
   if (currentStep === 1) {
@@ -375,11 +417,14 @@ function getStepError(
     );
   }
   if (currentStep === 5) {
-    return validateTeamStep(
-      fields.createInitialTeam,
-      fields.teamName,
-      fields.teamManagerId
-    );
+    return validateMembersStep({
+      projectMemberIds: fields.projectMemberIds,
+      selectedOwnerId: fields.selectedOwnerId,
+      users: fields.users,
+      createInitialTeam: fields.createInitialTeam,
+      teamName: fields.teamName,
+      teamManagerId: fields.teamManagerId,
+    });
   }
   return null;
 }
@@ -392,6 +437,8 @@ interface Step1Props {
   setKeyString: (_key: string) => void;
   description: string;
   setDescription: (_description: string) => void;
+  /** Edit mode only — create picks owner on Members. */
+  showOwnerField?: boolean;
   selectedOwnerId: string;
   setSelectedOwnerId: (_id: string) => void;
   status: 'active' | 'archived';
@@ -418,6 +465,7 @@ function Step1BasicDetails({
   setKeyString,
   description,
   setDescription,
+  showOwnerField = false,
   selectedOwnerId,
   setSelectedOwnerId,
   status,
@@ -485,26 +533,28 @@ function Step1BasicDetails({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="owner_id" className="text-sm font-medium">
-            Project Owner
-          </Label>
-          <SearchableSelect
-            id="owner_id"
-            name="owner_id"
-            value={selectedOwnerId}
-            onValueChange={setSelectedOwnerId}
-            placeholder="Search owners…"
-            className="bg-background/80 h-10"
-            options={users
-              .filter((u) => u.role === 'manager')
-              .map((u) => ({
-                value: u.id,
-                label: `${u.name} (${u.email})`,
-              }))}
-            emptyText="No matching managers."
-          />
-        </div>
+        {showOwnerField ? (
+          <div className="space-y-2">
+            <Label htmlFor="owner_id" className="text-sm font-medium">
+              Project Owner
+            </Label>
+            <SearchableSelect
+              id="owner_id"
+              name="owner_id"
+              value={selectedOwnerId}
+              onValueChange={setSelectedOwnerId}
+              placeholder="Search owners…"
+              className="bg-background/80 h-10"
+              options={users
+                .filter((u) => u.role === 'manager')
+                .map((u) => ({
+                  value: u.id,
+                  label: `${u.name} (${u.email})`,
+                }))}
+              emptyText="No matching managers."
+            />
+          </div>
+        ) : null}
 
         <div className="space-y-2">
           <Label htmlFor="status" className="text-sm font-medium">
@@ -754,7 +804,7 @@ function ProjectFormStepper({
     ...(!isEditMode
       ? [
           { number: 4, label: 'Sprint' },
-          { number: 5, label: 'Team' },
+          { number: 5, label: 'Members' },
         ]
       : []),
   ];
@@ -939,14 +989,11 @@ function getRestoredPeople(
   users: User[]
 ): {
   selectedOwnerId: string;
+  projectMemberIds: string[];
   teamManagerId: string;
   teamMemberIds: string[];
   hasUnavailablePeople: boolean;
 } {
-  const ownerIsAvailable = users.some(
-    (user) =>
-      user.id === draft.basicInfo.selectedOwnerId && user.role === 'manager'
-  );
   const usableUsers = users.filter(isProductUsableUser);
   const usableUserIds = new Set(usableUsers.map((user) => user.id));
   const managerIds = new Set(
@@ -954,6 +1001,20 @@ function getRestoredPeople(
       .filter((user) => user.role === 'admin' || user.role === 'manager')
       .map((user) => user.id)
   );
+  const projectMemberIds = [
+    ...new Set(
+      draft.team.projectMemberIds.filter((memberId) =>
+        usableUserIds.has(memberId)
+      )
+    ),
+  ];
+  const ownerIsAvailable =
+    Boolean(draft.basicInfo.selectedOwnerId) &&
+    projectMemberIds.includes(draft.basicInfo.selectedOwnerId) &&
+    usableUsers.some(
+      (user) =>
+        user.id === draft.basicInfo.selectedOwnerId && user.role === 'manager'
+    );
   const selectedOwnerId = ownerIsAvailable
     ? draft.basicInfo.selectedOwnerId
     : '';
@@ -968,10 +1029,12 @@ function getRestoredPeople(
 
   return {
     selectedOwnerId,
+    projectMemberIds,
     teamManagerId,
     teamMemberIds,
     hasUnavailablePeople:
       selectedOwnerId !== draft.basicInfo.selectedOwnerId ||
+      projectMemberIds.length !== new Set(draft.team.projectMemberIds).size ||
       teamManagerId !== draft.team.teamManagerId ||
       teamMemberIds.length !== new Set(draft.team.teamMemberIds).size,
   };
@@ -1321,6 +1384,14 @@ export function ProjectForm({
   const [teamManagerId, setTeamManagerId] = useState('');
   const [teamTechStack, setTeamTechStack] = useState('');
   const [teamMemberIds, setTeamMemberIds] = useState<string[]>([]);
+  const [projectMemberIds, setProjectMemberIds] = useState<string[]>(() =>
+    projectToEdit?.owner_id ? [projectToEdit.owner_id] : []
+  );
+  const [localUsers, setLocalUsers] = useState<User[]>(users);
+
+  useEffect(() => {
+    setLocalUsers(users);
+  }, [users]);
 
   const finalStep = isEditMode ? 3 : 5;
   const defaultTypeDefs = buildDefaultProjectTypeDefs();
@@ -1361,7 +1432,8 @@ export function ProjectForm({
       teamDescription !== '' ||
       teamManagerId !== '' ||
       teamTechStack !== '' ||
-      teamMemberIds.length > 0);
+      teamMemberIds.length > 0 ||
+      projectMemberIds.length > 0);
 
   const buildProjectCreationDraft = (): ProjectCreationDraft => ({
     version: PROJECT_CREATION_DRAFT_VERSION,
@@ -1404,6 +1476,7 @@ export function ProjectForm({
       teamManagerId,
       teamTechStack,
       teamMemberIds,
+      projectMemberIds,
     },
   });
 
@@ -1412,6 +1485,7 @@ export function ProjectForm({
     setKey('');
     setDescription('');
     setSelectedOwnerId('');
+    setProjectMemberIds([]);
     setStatus('active');
     setStartDate(getTodayDateString());
     setEndDate('');
@@ -1449,6 +1523,7 @@ export function ProjectForm({
     setKey(draft.basicInfo.key);
     setDescription(draft.basicInfo.description);
     setSelectedOwnerId(restoredPeople.selectedOwnerId);
+    setProjectMemberIds(restoredPeople.projectMemberIds);
     setStatus(draft.basicInfo.status);
     setStartDate(draft.basicInfo.startDate);
     setEndDate(draft.basicInfo.endDate);
@@ -1599,6 +1674,8 @@ export function ProjectForm({
       createInitialTeam,
       teamName,
       teamManagerId,
+      projectMemberIds,
+      users: localUsers,
     });
     if (errorMsg) {
       setMessage(errorMsg);
@@ -1767,6 +1844,12 @@ export function ProjectForm({
   const handleProjectCreate = async (projectData: CreateProjectInput) => {
     const accepted = await createProject(projectData);
     clearCurrentUserDraft();
+    invalidateProjectDropdownCache().catch((cacheError: unknown) => {
+      console.warn(
+        'warn. failed to invalidate project dropdown cache after create:',
+        cacheError
+      );
+    });
     const hasJiraConfig = Boolean(jiraConnectionId && jiraProjectKey);
     const jiraHint =
       importFromJira && hasJiraConfig
@@ -1865,6 +1948,14 @@ export function ProjectForm({
         ? (projectToEdit.workflow_config as Record<string, unknown>)
         : {};
 
+    const extraMemberIds = projectToEdit
+      ? undefined
+      : [
+          ...new Set(
+            projectMemberIds.filter((memberId) => memberId !== selectedOwnerId)
+          ),
+        ];
+
     return {
       name: name.trim(),
       key: key.toUpperCase().trim(),
@@ -1885,6 +1976,9 @@ export function ProjectForm({
         : null,
       github_connection_id: enableGithub ? githubConnectionId : null,
       github_token: resolveGithubToken(),
+      ...(extraMemberIds && extraMemberIds.length > 0
+        ? { member_ids: extraMemberIds }
+        : {}),
       ...resolveInitialSprintInput(),
       ...resolveInitialTeamInput(),
       ...resolveIntegrationBindingsInput(),
@@ -1909,7 +2003,11 @@ export function ProjectForm({
     setMessage(null);
     setIsError(false);
 
-    const hasRequiredFields = name.trim() && key.trim() && selectedOwnerId;
+    const hasRequiredFields =
+      name.trim() &&
+      key.trim() &&
+      selectedOwnerId &&
+      (isEditMode || projectMemberIds.includes(selectedOwnerId));
     if (!hasRequiredFields) {
       setMessage('Project Name, Key, and Owner are required.');
       setIsError(true);
@@ -2010,6 +2108,7 @@ export function ProjectForm({
               setKeyString: setKey,
               description,
               setDescription,
+              showOwnerField: isEditMode,
               selectedOwnerId,
               setSelectedOwnerId,
               status,
@@ -2018,7 +2117,7 @@ export function ProjectForm({
               setStartDate,
               endDate,
               setEndDate,
-              users,
+              users: localUsers,
               isEditMode,
               getTodayDateString,
             },
@@ -2061,6 +2160,18 @@ export function ProjectForm({
               setSprintEndDate,
             },
             stepTeam: {
+              projectMemberIds,
+              setProjectMemberIds,
+              selectedOwnerId,
+              setSelectedOwnerId,
+              users: localUsers,
+              onUserCreated: (user) => {
+                setLocalUsers((prev) =>
+                  prev.some((existing) => existing.id === user.id)
+                    ? prev
+                    : [...prev, user]
+                );
+              },
               createInitialTeam,
               setCreateInitialTeam,
               teamName,
@@ -2073,7 +2184,6 @@ export function ProjectForm({
               setTeamTechStack,
               teamMemberIds,
               setTeamMemberIds,
-              users,
             },
           }}
         />

@@ -24,6 +24,9 @@ describe('isPublicAccessPath', () => {
     '/reset-password',
     '/access-denied',
     '/check-email',
+    '/icon',
+    '/apple-icon',
+    '/opengraph-image',
     '/auth',
     '/auth/callback',
   ])('treats %s as public', (pathname) => {

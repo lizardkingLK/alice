@@ -79,6 +79,8 @@ type ProjectMutationInput = Omit<
 export type CreateProjectInput = ProjectMutationInput & {
   sprint?: InitialSprintInput;
   team?: InitialProjectTeamInput;
+  /** Extra project members on create (owner and actor are always included). */
+  member_ids?: string[];
   integration_bindings?: ProjectIntegrationBindingItem[];
 };
 

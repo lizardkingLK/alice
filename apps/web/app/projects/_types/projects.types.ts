@@ -87,6 +87,8 @@ type ProjectMutationInput = Omit<
 export type CreateProjectInput = ProjectMutationInput & {
   sprint?: InitialSprintInput;
   team?: InitialProjectTeamInput;
+  /** Extra project members on create (owner and actor are always included). */
+  member_ids?: string[];
   /** Org AI models to bind on create (bind-by-reference; no secrets). */
   integration_bindings?: ProjectIntegrationBindingItem[];
 };

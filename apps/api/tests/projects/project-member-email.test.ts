@@ -40,14 +40,48 @@ describe('project member email template', () => {
     expect(message).toEqual(
       expect.objectContaining({
         to: 'member@example.com',
-        subject: "You've been added to Apollo in Alice",
+        subject: 'Added to Apollo on Alice',
       })
     );
     expect(message.text).toContain('https://alice.example/projects/APOLLO');
     expect(message.html).toContain('https://alice.example/projects/APOLLO');
+    expect(message.html).toContain('https://alice.example/icon');
     expect(message.html).toContain('Open project');
+    expect(message.html).toContain('>A</div>'); // project initial fallback
     expect(message.text).not.toContain('token=secret');
     expect(message.text).not.toMatch(/\/projects\/[0-9a-f]{8}-[0-9a-f]{4}-/i);
+  });
+
+  it('includes a sanitized project logo when provided', () => {
+    const message = buildProjectMemberAddedEmail({
+      recipientEmail: 'member@example.com',
+      recipientName: 'Taylor',
+      projectKey: 'APOLLO',
+      projectName: 'Apollo',
+      projectLogoUrl: 'https://cdn.example/logos/apollo.png',
+      frontendUrl: 'https://alice.example',
+      notificationEventId,
+    });
+
+    expect(message.html).toContain(
+      'src="https://cdn.example/logos/apollo.png"'
+    );
+    expect(message.html).not.toContain('>A</div>');
+  });
+
+  it('ignores unsafe project logo URLs', () => {
+    const message = buildProjectMemberAddedEmail({
+      recipientEmail: 'member@example.com',
+      recipientName: 'Taylor',
+      projectKey: 'APOLLO',
+      projectName: 'Apollo',
+      projectLogoUrl: 'javascript:alert(1)',
+      frontendUrl: 'https://alice.example',
+      notificationEventId,
+    });
+
+    expect(message.html).not.toContain('javascript:');
+    expect(message.html).toContain('>A</div>');
   });
 
   it('escapes untrusted display values and strips header newlines', () => {
@@ -61,7 +95,7 @@ describe('project member email template', () => {
     });
 
     expect(message.subject).toBe(
-      "You've been added to Apollo Bcc: attacker@example.com <script> in Alice"
+      'Added to Apollo Bcc: attacker@example.com <script> on Alice'
     );
     expect(message.subject).not.toMatch(/[\r\n]/);
     expect(message.html).toContain('&lt;Taylor&gt;');
@@ -127,7 +161,7 @@ describe('Resend project member email sender', () => {
       expect.objectContaining({
         from: 'Alice <notifications@example.com>',
         to: ['member@example.com'],
-        subject: "You've been added to Apollo in Alice",
+        subject: 'Added to Apollo on Alice',
       })
     );
   });

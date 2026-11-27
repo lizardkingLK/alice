@@ -69,3 +69,34 @@ export function buildValidatedFrontendUrl(
   const path = pathSegments.map(encodeURIComponent).join('/');
   return new URL(`/${path}`, configuredUrl.origin).toString();
 }
+
+/** Absolute http(s) image URL for email HTML, or null if unsafe / empty. */
+export function sanitizeEmailImageUrl(
+  value: string | null | undefined
+): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed || /[\r\n]/.test(trimmed)) {
+    return null;
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return null;
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    return null;
+  }
+  if (parsed.username || parsed.password) {
+    return null;
+  }
+  return parsed.toString();
+}
+
+/**
+ * Alice app icon for transactional mail headers.
+ * Uses the public Next metadata route `/icon` (must stay outside the auth gate).
+ */
+export function buildAliceBrandLogoUrl(frontendUrl: string): string {
+  return buildValidatedFrontendUrl(frontendUrl, ['icon']);
+}

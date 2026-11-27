@@ -56,8 +56,11 @@ admin who created this project) from the list. Change the owner in project
 settings first if ownership should move. Creator membership is locked by the
 system.
 
-When someone is added, Alice emails them a link to the project using its
-shareable key (`/projects/{KEY}`), not the internal UUID.
+When someone is added, Alice emails them a branded notice (Alice mark + project
+logo when set) with a link using the shareable key (`/projects/{KEY}`), not the
+internal UUID. The From display name comes from the API
+`TRANSACTIONAL_EMAIL_FROM` setting (use `Alice <you@yourdomain.com>`). The Alice
+mark loads from the public web `/icon` route (not behind login).
 
 ---
 

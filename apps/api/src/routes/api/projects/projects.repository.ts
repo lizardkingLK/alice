@@ -709,6 +709,7 @@ export class ProjectsRepository {
               ...new Set<string>([
                 data.owner_id,
                 actorId,
+                ...(data.member_ids ?? []),
                 ...(data.team ? [data.team.manager_id] : []),
                 ...uniqueTeamMembers.map((member) => member.user_id),
               ]),

@@ -24,6 +24,10 @@ const PUBLIC_ACCESS_PATHS = new Set([
   '/reset-password',
   '/access-denied',
   '/check-email',
+  // Brand marks used in browser chrome + transactional email HTML
+  '/icon',
+  '/apple-icon',
+  '/opengraph-image',
 ]);
 
 /**

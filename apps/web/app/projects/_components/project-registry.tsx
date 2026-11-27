@@ -382,6 +382,25 @@ export function ProjectRegistry({
   const isAdmin = currentUserRole === UserRoleEnum.admin;
   const isSoftDelete = deleteMode === 'soft';
 
+  // Deep link from access-request grant dialog: /projects?create=1
+  useEffect(() => {
+    if (!isAdmin) {
+      return;
+    }
+    const createFlag = searchParams.get('create');
+    if (createFlag !== '1' && createFlag !== 'true') {
+      return;
+    }
+    setProjectToEdit(null);
+    setIsAddProjectOpen(true);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('create');
+    const nextQuery = params.toString();
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
+      scroll: false,
+    });
+  }, [isAdmin, pathname, router, searchParams]);
+
   const handleTabChange = (newTab: ProjectStatusTab) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', newTab);

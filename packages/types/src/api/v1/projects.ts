@@ -122,6 +122,8 @@ export const createProjectSchema = baseCreateProjectSchema
   .extend({
     sprint: initialSprintSchema.optional(),
     team: initialProjectTeamSchema.optional(),
+    /** Extra project members on create (owner and actor are always included). */
+    member_ids: z.array(z.uuid()).optional(),
     /** Org AI models to bind on create (bind-by-reference). */
     integration_bindings: z
       .array(projectIntegrationBindingItemSchema)

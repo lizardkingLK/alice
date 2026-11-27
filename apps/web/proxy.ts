@@ -6,7 +6,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Keep brand metadata images public — transactional email embeds `/icon`
+  // (and similar). Auth redirects break those fetches in mail clients.
   matcher: [
-    `/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)`,
+    `/((?!_next/static|_next/image|favicon.ico|icon(?:$|\\/)|apple-icon(?:$|\\/)|opengraph-image(?:$|\\/)|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)`,
   ],
 };

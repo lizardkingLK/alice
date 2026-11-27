@@ -76,6 +76,7 @@ function createDraft(
       teamManagerId: 'user-manager',
       teamTechStack: 'TypeScript',
       teamMemberIds: ['user-member'],
+      projectMemberIds: ['user-manager'],
     },
     ...overrides,
   };
@@ -133,8 +134,8 @@ describe('project creation draft storage', () => {
     const userOneKey = projectCreationDraftStorageKey('user-1');
     const userTwoKey = projectCreationDraftStorageKey('user-2');
 
-    expect(userOneKey).toBe('alice:project-creation-draft:v4:user-1');
-    expect(userTwoKey).toBe('alice:project-creation-draft:v4:user-2');
+    expect(userOneKey).toBe('alice:project-creation-draft:v5:user-1');
+    expect(userTwoKey).toBe('alice:project-creation-draft:v5:user-2');
     expect(saveProjectCreationDraft('user-1', userOneDraft)).toBe(true);
     expect(readProjectCreationDraft('user-2')).toBeNull();
 
@@ -206,13 +207,20 @@ describe('project creation draft storage', () => {
       imports: createDraft().imports,
       sourceControl: createDraft().sourceControl,
       sprint: createDraft().sprint,
-      team: createDraft().team,
+      team: {
+        createInitialTeam: true,
+        teamName: 'Platform Team',
+        teamDescription: 'Builds Alice',
+        teamManagerId: 'user-manager',
+        teamTechStack: 'TypeScript',
+        teamMemberIds: ['user-member'],
+      },
     };
 
-    // v1 step 4 (Sprint) → v2 step 5 → v3/v4 step 4
+    // v1 step 4 (Sprint) → v2 step 5 → v3/v5 step 4
     expect(validateProjectCreationDraft(legacyDraft)).toEqual({
       ...createDraft(),
-      version: 4,
+      version: 5,
       currentStep: 4,
       integrations: {
         aiBindingIds: [],
@@ -229,12 +237,19 @@ describe('project creation draft storage', () => {
       imports: createDraft().imports,
       sourceControl: createDraft().sourceControl,
       sprint: createDraft().sprint,
-      team: createDraft().team,
+      team: {
+        createInitialTeam: true,
+        teamName: 'Platform Team',
+        teamDescription: 'Builds Alice',
+        teamManagerId: 'user-manager',
+        teamTechStack: 'TypeScript',
+        teamMemberIds: ['user-member'],
+      },
     };
 
     expect(validateProjectCreationDraft(v2Draft)).toEqual({
       ...createDraft(),
-      version: 4,
+      version: 5,
       currentStep: 5,
       integrations: {
         aiBindingIds: [],
@@ -255,11 +270,18 @@ describe('project creation draft storage', () => {
       sourceControl: createDraft().sourceControl,
       integrations: createDraft().integrations,
       sprint: createDraft().sprint,
-      team: createDraft().team,
+      team: {
+        createInitialTeam: true,
+        teamName: 'Platform Team',
+        teamDescription: 'Builds Alice',
+        teamManagerId: 'user-manager',
+        teamTechStack: 'TypeScript',
+        teamMemberIds: ['user-member'],
+      },
     };
 
     const migrated = validateProjectCreationDraft(v3Draft);
-    expect(migrated?.version).toBe(4);
+    expect(migrated?.version).toBe(5);
     expect(migrated?.basicInfo.workItemTypeDefs).toEqual(
       buildDefaultProjectTypeDefs([
         'Issue',
@@ -269,7 +291,32 @@ describe('project creation draft storage', () => {
     expect(migrated).not.toHaveProperty('basicInfo.selectedWorkItemTypes');
   });
 
-  it('migrates a stored v2 draft key into the v4 key on read', () => {
+  it('migrates v4 drafts by adding projectMemberIds from selectedOwnerId', () => {
+    const v4Draft = {
+      version: 4 as const,
+      currentStep: 5 as const,
+      basicInfo: createDraft().basicInfo,
+      imports: createDraft().imports,
+      sourceControl: createDraft().sourceControl,
+      integrations: createDraft().integrations,
+      sprint: createDraft().sprint,
+      team: {
+        createInitialTeam: true,
+        teamName: 'Platform Team',
+        teamDescription: 'Builds Alice',
+        teamManagerId: 'user-manager',
+        teamTechStack: 'TypeScript',
+        teamMemberIds: ['user-member'],
+      },
+    };
+
+    expect(validateProjectCreationDraft(v4Draft)).toEqual({
+      ...createDraft(),
+      currentStep: 5,
+    });
+  });
+
+  it('migrates a stored v2 draft key into the v5 key on read', () => {
     const v2Draft = {
       version: 2 as const,
       currentStep: 4 as const,
@@ -277,7 +324,14 @@ describe('project creation draft storage', () => {
       imports: createDraft().imports,
       sourceControl: createDraft().sourceControl,
       sprint: createDraft().sprint,
-      team: createDraft().team,
+      team: {
+        createInitialTeam: true,
+        teamName: 'Platform Team',
+        teamDescription: 'Builds Alice',
+        teamManagerId: 'user-manager',
+        teamTechStack: 'TypeScript',
+        teamMemberIds: ['user-member'],
+      },
     };
     localStorage.setItem(
       'alice:project-creation-draft:v2:user-1',
@@ -285,7 +339,7 @@ describe('project creation draft storage', () => {
     );
 
     const migrated = readProjectCreationDraft('user-1');
-    expect(migrated?.version).toBe(4);
+    expect(migrated?.version).toBe(5);
     expect(migrated?.currentStep).toBe(3);
     expect(migrated?.integrations).toEqual({
       aiBindingIds: [],
@@ -299,7 +353,7 @@ describe('project creation draft storage', () => {
     ).not.toBeNull();
   });
 
-  it('migrates a stored v3 draft key into the v4 key on read', () => {
+  it('migrates a stored v3 draft key into the v5 key on read', () => {
     const v3Draft = {
       version: 3 as const,
       currentStep: 2 as const,
@@ -308,7 +362,14 @@ describe('project creation draft storage', () => {
       sourceControl: createDraft().sourceControl,
       integrations: createDraft().integrations,
       sprint: createDraft().sprint,
-      team: createDraft().team,
+      team: {
+        createInitialTeam: true,
+        teamName: 'Platform Team',
+        teamDescription: 'Builds Alice',
+        teamManagerId: 'user-manager',
+        teamTechStack: 'TypeScript',
+        teamMemberIds: ['user-member'],
+      },
     };
     localStorage.setItem(
       'alice:project-creation-draft:v3:user-1',
@@ -316,7 +377,7 @@ describe('project creation draft storage', () => {
     );
 
     const migrated = readProjectCreationDraft('user-1');
-    expect(migrated?.version).toBe(4);
+    expect(migrated?.version).toBe(5);
     expect(migrated?.basicInfo.workItemTypeDefs).toEqual(
       buildDefaultProjectTypeDefs(['Epic', 'Story'])
     );

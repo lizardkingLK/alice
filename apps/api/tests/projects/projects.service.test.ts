@@ -215,7 +215,7 @@ describe('ProjectsService backend tests', () => {
         expect(sendProjectMemberEmailMock).toHaveBeenCalledWith(
           expect.objectContaining({
             to: 'admin@example.com',
-            subject: "You've been added to Alice Project in Alice",
+            subject: 'Added to Alice Project on Alice',
           })
         );
       });
@@ -1172,7 +1172,7 @@ describe('ProjectsService backend tests', () => {
         expect(sendProjectMemberEmailMock).toHaveBeenCalledWith(
           expect.objectContaining({
             to: 'taylor@example.com',
-            subject: "You've been added to Alice Project in Alice",
+            subject: 'Added to Alice Project on Alice',
           })
         );
         expect(sendProjectMemberEmailMock.mock.calls[0]?.[0].text).toContain(

@@ -39,6 +39,7 @@ apps/web/content/docs/
 apps/web/content/docs-index.json
 
 # Misc
+notes
 .DS_Store
 *.pem
 .vercel
