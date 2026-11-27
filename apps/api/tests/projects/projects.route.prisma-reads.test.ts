@@ -35,6 +35,8 @@ const {
   enqueueHardDeleteProjectMock,
   addMemberMock,
   getProjectIntegrationsSummaryMock,
+  updateProjectMock,
+  requireApiAuthMock,
 } = vi.hoisted(() => ({
   listProjectsPaginatedMock: vi.fn(),
   getProjectDetailMock: vi.fn(),
@@ -44,17 +46,12 @@ const {
   enqueueHardDeleteProjectMock: vi.fn(),
   addMemberMock: vi.fn(),
   getProjectIntegrationsSummaryMock: vi.fn(),
+  updateProjectMock: vi.fn(),
+  requireApiAuthMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', () => ({
-  requireApiAuth: (
-    req: { userId?: string },
-    _res: unknown,
-    next: () => void
-  ) => {
-    req.userId = '11111111-1111-4111-8111-111111111111';
-    next();
-  },
+  requireApiAuth: requireApiAuthMock,
 }));
 
 const projectsService = {
@@ -66,6 +63,7 @@ const projectsService = {
   enqueueHardDeleteProject: enqueueHardDeleteProjectMock,
   addMember: addMemberMock,
   getProjectIntegrationsSummary: getProjectIntegrationsSummaryMock,
+  updateProject: updateProjectMock,
 } as unknown as ProjectsService;
 
 const workItemService = {
@@ -137,6 +135,77 @@ const validCreateBody = {
 describe('projects unused Prisma GET routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requireApiAuthMock.mockImplementation(
+      (req: { userId?: string }, _res: unknown, next: () => void) => {
+        req.userId = '11111111-1111-4111-8111-111111111111';
+        next();
+      }
+    );
+  });
+
+  it('rejects an unauthenticated project update before calling the service', async () => {
+    requireApiAuthMock.mockImplementationOnce(
+      (
+        _req: unknown,
+        res: { status: (code: number) => { json: (body: unknown) => void } }
+      ) => {
+        res.status(401).json({ error: 'Unauthorized' });
+      }
+    );
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(
+        `${baseUrl}/api/projects/${mockProjectDetail.id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: 'Unauthorized update',
+            expectedUpdatedAt: mockProjectDetail.updated_at,
+          }),
+        }
+      );
+
+      expect(response.status).toBe(401);
+      await expect(response.json()).resolves.toEqual({ error: 'Unauthorized' });
+    });
+
+    expect(updateProjectMock).not.toHaveBeenCalled();
+  });
+
+  it('returns forbidden when an authenticated user cannot update the project', async () => {
+    updateProjectMock.mockRejectedValueOnce(
+      new Error(
+        'Unauthorized. You do not have permission to manage this project.'
+      )
+    );
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(
+        `${baseUrl}/api/projects/${mockProjectDetail.id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: 'Unauthorized update',
+            expectedUpdatedAt: mockProjectDetail.updated_at,
+          }),
+        }
+      );
+
+      expect(response.status).toBe(403);
+      await expect(response.json()).resolves.toEqual({
+        error:
+          'Unauthorized. You do not have permission to manage this project.',
+      });
+    });
+
+    expect(updateProjectMock).toHaveBeenCalledWith(
+      '11111111-1111-4111-8111-111111111111',
+      mockProjectDetail.id,
+      { name: 'Unauthorized update', status: 'active' },
+      mockProjectDetail.updated_at
+    );
   });
 
   it('returns the paginated Prisma list envelope', async () => {

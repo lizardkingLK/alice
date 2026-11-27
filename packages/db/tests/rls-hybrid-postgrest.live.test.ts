@@ -36,6 +36,7 @@ const STRATEGY_A_SELECT_TABLES = [
   'access_requests',
   'project_management_connections',
   'version_control_connections',
+  'figma_oauth_operations',
   'chat_attachments',
   'integrations',
   'work_item_links',

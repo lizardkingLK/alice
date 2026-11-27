@@ -1,4 +1,8 @@
-import { databaseBusyJsonError, isDatabaseBusyError } from './prisma-errors';
+import {
+  databaseBusyJsonError,
+  isDatabaseBusyError,
+  isPrismaClientError,
+} from './prisma-errors';
 
 /**
  * Map service Error messages to HTTP status for integration / RBAC routes.
@@ -34,6 +38,12 @@ export function jsonErrorFromCaught(
 ): { status: number; error: string; code?: string } {
   if (isDatabaseBusyError(error)) {
     return databaseBusyJsonError();
+  }
+
+  // Prisma client errors carry internal DB/schema details (column names,
+  // constraint names, raw SQL). Never forward them to the frontend (GI-666).
+  if (isPrismaClientError(error)) {
+    return { status: 500, error: fallbackMessage };
   }
 
   const message = error instanceof Error ? error.message : fallbackMessage;

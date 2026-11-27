@@ -8,6 +8,12 @@ export type OAuthStatePayload = {
   userId: string;
   nonce: string;
   exp: number;
+  projectId?: string;
+};
+
+export type CreateOAuthStateOptions = {
+  ttlMs?: number;
+  projectId?: string;
 };
 
 export function signOAuthState(
@@ -22,14 +28,22 @@ export function createOAuthState(
   purpose: string,
   ttlMs = DEFAULT_STATE_TTL_MS
 ): string {
-  return signOAuthState(
-    {
-      userId,
-      nonce: randomBytes(16).toString('hex'),
-      exp: utcNow().getTime() + ttlMs,
-    },
-    purpose
-  );
+  return createOAuthStateWithPayload(userId, purpose, { ttlMs }).state;
+}
+
+/** Create a state value while exposing its nonce for a server-side one-time record. */
+export function createOAuthStateWithPayload(
+  userId: string,
+  purpose: string,
+  options: CreateOAuthStateOptions = {}
+): { state: string; payload: OAuthStatePayload } {
+  const payload: OAuthStatePayload = {
+    userId,
+    nonce: randomBytes(16).toString('hex'),
+    exp: utcNow().getTime() + (options.ttlMs ?? DEFAULT_STATE_TTL_MS),
+    ...(options.projectId ? { projectId: options.projectId } : {}),
+  };
+  return { state: signOAuthState(payload, purpose), payload };
 }
 
 export function verifyOAuthState(
@@ -47,7 +61,9 @@ export function verifyOAuthState(
     parsed === null ||
     typeof (parsed as OAuthStatePayload).userId !== 'string' ||
     typeof (parsed as OAuthStatePayload).nonce !== 'string' ||
-    typeof (parsed as OAuthStatePayload).exp !== 'number'
+    typeof (parsed as OAuthStatePayload).exp !== 'number' ||
+    ('projectId' in parsed &&
+      typeof (parsed as OAuthStatePayload).projectId !== 'string')
   ) {
     throw new TypeError('Invalid OAuth state payload.');
   }

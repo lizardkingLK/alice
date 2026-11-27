@@ -224,6 +224,56 @@ export const VersionControlConnectionStatus = {
 export type VersionControlConnectionStatus = (typeof VersionControlConnectionStatus)[keyof typeof VersionControlConnectionStatus]
 
 
+export const FigmaOAuthCredentialStatus = {
+  unknown: 'unknown',
+  active: 'active',
+  reauthorization_required: 'reauthorization_required'
+} as const
+
+export type FigmaOAuthCredentialStatus = (typeof FigmaOAuthCredentialStatus)[keyof typeof FigmaOAuthCredentialStatus]
+
+
+export const FigmaOAuthOperationKind = {
+  authorization_code_exchange: 'authorization_code_exchange',
+  token_refresh: 'token_refresh'
+} as const
+
+export type FigmaOAuthOperationKind = (typeof FigmaOAuthOperationKind)[keyof typeof FigmaOAuthOperationKind]
+
+
+export const FigmaOAuthOperationStatus = {
+  prepared: 'prepared',
+  requesting: 'requesting',
+  response_received: 'response_received',
+  outcome_unknown: 'outcome_unknown',
+  provider_rejected: 'provider_rejected',
+  finalized: 'finalized',
+  superseded: 'superseded',
+  expired: 'expired'
+} as const
+
+export type FigmaOAuthOperationStatus = (typeof FigmaOAuthOperationStatus)[keyof typeof FigmaOAuthOperationStatus]
+
+
+export const FigmaOAuthProjectBindingStatus = {
+  not_applicable: 'not_applicable',
+  pending: 'pending',
+  applied: 'applied',
+  skipped: 'skipped'
+} as const
+
+export type FigmaOAuthProjectBindingStatus = (typeof FigmaOAuthProjectBindingStatus)[keyof typeof FigmaOAuthProjectBindingStatus]
+
+
+export const FigmaOAuthOperationResolution = {
+  provider_rejection_confirmed: 'provider_rejection_confirmed',
+  provider_access_revoked: 'provider_access_revoked',
+  oauth_app_credentials_rotated: 'oauth_app_credentials_rotated'
+} as const
+
+export type FigmaOAuthOperationResolution = (typeof FigmaOAuthOperationResolution)[keyof typeof FigmaOAuthOperationResolution]
+
+
 export const IntegrationCategory = {
   ai_agent: 'ai_agent',
   communication: 'communication',

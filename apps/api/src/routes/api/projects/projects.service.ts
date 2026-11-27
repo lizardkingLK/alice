@@ -769,6 +769,14 @@ export class ProjectsService {
   }> {
     await requireProjectManager(actorId);
 
+    const accessibleProjectIds =
+      await this.projectsRepository.listAccessibleProjectIds(actorId);
+    if (!accessibleProjectIds.includes(projectId)) {
+      throw new Error(
+        'Unauthorized. You do not have permission to manage this project.'
+      );
+    }
+
     if (input.github_repo !== undefined && input.github_repo !== null) {
       assertSingleGithubRepoOrThrow(input.github_repo);
     }

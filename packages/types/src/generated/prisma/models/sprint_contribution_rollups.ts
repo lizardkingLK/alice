@@ -598,14 +598,6 @@ export type sprint_contribution_rollupsUncheckedUpdateManyWithoutSprintNestedInp
   deleteMany?: Prisma.sprint_contribution_rollupsScalarWhereInput | Prisma.sprint_contribution_rollupsScalarWhereInput[]
 }
 
-export type IntFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type sprint_contribution_rollupsCreateWithoutAssigneeInput = {
   assignee_key: string
   as_of: Date | string

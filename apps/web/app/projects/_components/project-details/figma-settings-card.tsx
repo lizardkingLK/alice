@@ -11,7 +11,15 @@ import {
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
-import { Edit, ExternalLink, Trash2 } from '@repo/ui/lib/icons';
+import {
+  Edit,
+  ExternalLink,
+  Loader2,
+  Plug,
+  RefreshCw,
+  Trash2,
+  Unplug,
+} from '@repo/ui/lib/icons';
 import { IntegrationIdentity } from '@/app/settings/_components/settings-integration-identity';
 import { WORKSPACE_INTEGRATIONS } from '@/app/settings/_components/settings-integration-catalog';
 import { REPORT_CARD_CLASS } from '@/app/projects/_components/project-details/project-details-shared';
@@ -21,6 +29,8 @@ import {
   IntegrationSummaryFields,
 } from '@/app/projects/_components/project-details/integration-settings-shared';
 import { useIntegrationSettingsSave } from '@/app/projects/_hooks/use-integration-settings-save';
+import { useFigmaConnection } from '@/app/projects/_hooks/use-figma-connection';
+import type { FigmaConnectionStatusDto } from '@/app/projects/_services/projects.figma.mutations.client';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 
 const FIGMA_CATALOG_ITEM = WORKSPACE_INTEGRATIONS.find(
@@ -32,6 +42,181 @@ export type FigmaSettingsCardProps = {
   readonly canEditProject: boolean;
 };
 
+function figmaConnectionLabel(
+  isLoading: boolean,
+  connection: FigmaConnectionStatusDto | null
+): string {
+  if (isLoading) return 'Checking...';
+  if (connection?.connected) return 'Connected';
+  return 'Not connected';
+}
+
+function figmaAccessLabel(
+  savedUrl: string | null,
+  connection: FigmaConnectionStatusDto | null
+): string {
+  if (!savedUrl) return 'No saved design link';
+  if (connection?.design_access_verified) return 'Verified';
+  return 'Not verified';
+}
+
+type FigmaConnectionPanelProps = {
+  readonly connection: FigmaConnectionStatusDto | null;
+  readonly savedUrl: string | null;
+  readonly canEditProject: boolean;
+  readonly isLoading: boolean;
+  readonly isConnecting: boolean;
+  readonly isVerifying: boolean;
+  readonly isDisconnecting: boolean;
+  readonly onConnect: () => void;
+  readonly onVerify: () => Promise<boolean>;
+  readonly onDisconnect: () => Promise<void>;
+};
+
+function VerifyFigmaButton({
+  busy,
+  verifying,
+  onVerify,
+}: Readonly<{
+  busy: boolean;
+  verifying: boolean;
+  onVerify: () => Promise<boolean>;
+}>) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={() => void onVerify()}
+      disabled={busy}
+    >
+      {verifying ? (
+        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <RefreshCw className="mr-1 h-3.5 w-3.5" />
+      )}
+      Verify design access
+    </Button>
+  );
+}
+
+function ConnectFigmaButton({
+  busy,
+  connecting,
+  connected,
+  onConnect,
+}: Readonly<{
+  busy: boolean;
+  connecting: boolean;
+  connected: boolean;
+  onConnect: () => void;
+}>) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={onConnect}
+      disabled={busy}
+    >
+      {connecting ? (
+        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <Plug className="mr-1 h-3.5 w-3.5" />
+      )}
+      {connected ? 'Reconnect Figma' : 'Connect Figma'}
+    </Button>
+  );
+}
+
+function DisconnectFigmaButton({
+  busy,
+  disconnecting,
+  onDisconnect,
+}: Readonly<{
+  busy: boolean;
+  disconnecting: boolean;
+  onDisconnect: () => Promise<void>;
+}>) {
+  return (
+    <Button
+      type="button"
+      variant="destructive"
+      size="sm"
+      onClick={() => void onDisconnect()}
+      disabled={busy}
+    >
+      {disconnecting ? (
+        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <Unplug className="mr-1 h-3.5 w-3.5" />
+      )}
+      Disconnect
+    </Button>
+  );
+}
+
+function FigmaConnectionPanel({
+  connection,
+  savedUrl,
+  canEditProject,
+  isLoading,
+  isConnecting,
+  isVerifying,
+  isDisconnecting,
+  onConnect,
+  onVerify,
+  onDisconnect,
+}: Readonly<FigmaConnectionPanelProps>) {
+  const busy = isConnecting || isVerifying || isDisconnecting;
+  const fields = [
+    {
+      label: 'Connection',
+      value: figmaConnectionLabel(isLoading, connection),
+    },
+    {
+      label: 'Design access',
+      value: figmaAccessLabel(savedUrl, connection),
+    },
+    ...(connection?.authorized_by_name
+      ? [{ label: 'Authorized by', value: connection.authorized_by_name }]
+      : []),
+    ...(connection?.verified_file_name
+      ? [{ label: 'Verified design', value: connection.verified_file_name }]
+      : []),
+  ];
+
+  return (
+    <>
+      <IntegrationSummaryFields fields={fields} />
+      {canEditProject ? (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {connection?.connected && savedUrl ? (
+            <VerifyFigmaButton
+              busy={busy}
+              verifying={isVerifying}
+              onVerify={onVerify}
+            />
+          ) : null}
+          <ConnectFigmaButton
+            busy={busy}
+            connecting={isConnecting}
+            connected={Boolean(connection?.connected)}
+            onConnect={onConnect}
+          />
+          {connection?.connected ? (
+            <DisconnectFigmaButton
+              busy={busy}
+              disconnecting={isDisconnecting}
+              onDisconnect={onDisconnect}
+            />
+          ) : null}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 export function FigmaSettingsCard({
   project,
   canEditProject,
@@ -39,6 +224,18 @@ export function FigmaSettingsCard({
   const [savedUrl, setSavedUrl] = useState(project.figma_url ?? null);
   const [figmaUrl, setFigmaUrl] = useState(project.figma_url ?? '');
   const [isEditing, setIsEditing] = useState(!project.figma_url);
+  const {
+    connection,
+    isLoading: isLoadingConnection,
+    isConnecting,
+    isVerifying,
+    isDisconnecting,
+    loadError,
+    refresh: refreshConnection,
+    verify: verifyDesignAccess,
+    disconnect,
+    handleConnect,
+  } = useFigmaConnection(project.id);
 
   const { isSaving, message, isError, clearFeedback, setFailure, save } =
     useIntegrationSettingsSave({
@@ -76,6 +273,11 @@ export function FigmaSettingsCard({
       setSavedUrl(nextUrl);
       setFigmaUrl(nextUrl);
       setIsEditing(false);
+      if (connection?.connected) {
+        await verifyDesignAccess();
+      } else {
+        refreshConnection();
+      }
     }
   };
 
@@ -84,6 +286,7 @@ export function FigmaSettingsCard({
       setSavedUrl(null);
       setFigmaUrl('');
       setIsEditing(true);
+      refreshConnection();
     }
   };
 
@@ -178,6 +381,19 @@ export function FigmaSettingsCard({
       </CardHeader>
       <CardContent className="space-y-4">
         <IntegrationFeedbackBanner message={message} isError={isError} />
+        <IntegrationFeedbackBanner message={loadError} isError={true} />
+        <FigmaConnectionPanel
+          connection={connection}
+          savedUrl={savedUrl}
+          canEditProject={canEditProject}
+          isLoading={isLoadingConnection}
+          isConnecting={isConnecting}
+          isVerifying={isVerifying}
+          isDisconnecting={isDisconnecting}
+          onConnect={handleConnect}
+          onVerify={verifyDesignAccess}
+          onDisconnect={disconnect}
+        />
         {body}
       </CardContent>
     </Card>

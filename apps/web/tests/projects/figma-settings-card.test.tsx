@@ -6,6 +6,19 @@ import { projectFactory } from '../factories/project.factory';
 
 const mockSave = vi.fn();
 const mockSetFailure = vi.fn();
+const {
+  figmaHookState,
+  mockRefreshConnection,
+  mockVerifyDesignAccess,
+  mockDisconnect,
+  mockHandleConnect,
+} = vi.hoisted(() => ({
+  figmaHookState: { connection: null as Record<string, unknown> | null },
+  mockRefreshConnection: vi.fn(),
+  mockVerifyDesignAccess: vi.fn(),
+  mockDisconnect: vi.fn(),
+  mockHandleConnect: vi.fn(),
+}));
 
 vi.mock('@/app/projects/_hooks/use-integration-settings-save', () => ({
   useIntegrationSettingsSave: () => ({
@@ -18,10 +31,27 @@ vi.mock('@/app/projects/_hooks/use-integration-settings-save', () => ({
   }),
 }));
 
+vi.mock('@/app/projects/_hooks/use-figma-connection', () => ({
+  useFigmaConnection: () => ({
+    connection: figmaHookState.connection,
+    isLoading: false,
+    isConnecting: false,
+    isVerifying: false,
+    isDisconnecting: false,
+    loadError: null,
+    refresh: mockRefreshConnection,
+    verify: mockVerifyDesignAccess,
+    disconnect: mockDisconnect,
+    handleConnect: mockHandleConnect,
+  }),
+}));
+
 describe('FigmaSettingsCard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    figmaHookState.connection = null;
     mockSave.mockResolvedValue(true);
+    mockVerifyDesignAccess.mockResolvedValue(true);
   });
 
   it('saves one valid Figma URL for the current project', async () => {
@@ -121,5 +151,59 @@ describe('FigmaSettingsCard', () => {
     expect(
       screen.queryByRole('button', { name: 'Remove link' })
     ).not.toBeInTheDocument();
+  });
+
+  it('shows connection and current design verification as separate statuses', () => {
+    figmaHookState.connection = {
+      connected: true,
+      design_access_verified: false,
+      authorized_by_name: 'Alice Manager',
+      verification_error: 'The connected account cannot access this file.',
+    };
+
+    render(
+      <FigmaSettingsCard
+        project={projectFactory.build({
+          figma_url: 'https://www.figma.com/design/file-a/Alice',
+        })}
+        canEditProject={true}
+      />
+    );
+
+    expect(screen.getByText('Connected')).toBeInTheDocument();
+    expect(screen.getByText('Not verified')).toBeInTheDocument();
+    expect(screen.getByText('Alice Manager')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Verify design access' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Reconnect Figma' })
+    ).toBeInTheDocument();
+  });
+
+  it('preserves the active connection when the saved link changes', async () => {
+    figmaHookState.connection = {
+      connected: true,
+      design_access_verified: true,
+      authorized_by_name: 'Alice Manager',
+    };
+    render(
+      <FigmaSettingsCard
+        project={projectFactory.build({
+          figma_url: 'https://www.figma.com/design/file-a/Alice',
+        })}
+        canEditProject={true}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit link' }));
+    const input = screen.getByLabelText('Figma URL');
+    fireEvent.change(input, {
+      target: { value: 'https://www.figma.com/design/file-b/Bob' },
+    });
+    fireEvent.submit(input.closest('form')!);
+
+    await waitFor(() => expect(mockVerifyDesignAccess).toHaveBeenCalled());
+    expect(mockDisconnect).not.toHaveBeenCalled();
   });
 });

@@ -73,6 +73,9 @@ import { createJiraRouter } from '../routes/api/jira/jira.route';
 import { GithubRepository } from '../routes/api/github/github.repository';
 import { GithubService } from '../routes/api/github/github.service';
 import { createGithubRouter } from '../routes/api/github/github.route';
+import { FigmaRepository } from '../routes/api/figma/figma.repository';
+import { FigmaService } from '../routes/api/figma/figma.service';
+import { createFigmaRouter } from '../routes/api/figma/figma.route';
 import { UsersRepository } from '../routes/api/users/users.repository';
 import { UsersService } from '../routes/api/users/users.service';
 import { createUsersRouter } from '../routes/api/users/users.route';
@@ -352,6 +355,16 @@ function createGithubConfig() {
   };
 }
 
+function createFigmaConfig(
+  projectsRepository: Pick<ProjectsRepository, 'listAccessibleProjectIds'>
+) {
+  const figmaRepository = new FigmaRepository();
+  const figmaService = new FigmaService(figmaRepository, projectsRepository);
+  const router = createFigmaRouter({ figmaService });
+
+  return { figmaRepository, figmaService, router };
+}
+
 function createProjectsConfig(
   workItemService: WorkItemService,
   jiraService: JiraService,
@@ -561,6 +574,7 @@ export const notifications = createNotificationsConfig(
 );
 export const activities = createActivitiesConfig();
 export const github = createGithubConfig();
+export const figma = createFigmaConfig(sharedProjectsRepository);
 export const workItems = createWorkItemsConfig(
   notifications.notificationsService,
   activities.activitiesService,

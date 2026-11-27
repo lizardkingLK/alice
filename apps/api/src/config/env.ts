@@ -34,6 +34,15 @@ const serverSchema = z.object({
   GITHUB_CLIENT_ID: z.string().min(1).optional(),
   GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
   GITHUB_REDIRECT_URI: z.string().min(1).optional(),
+  /** Figma OAuth app credentials — optional until Connect Figma is used. */
+  FIGMA_CLIENT_ID: z.string().min(1).optional(),
+  FIGMA_CLIENT_SECRET: z.string().min(1).optional(),
+  FIGMA_REDIRECT_URI: z.string().min(1).optional(),
+  /** Shared credential/token coordinator rollout switches. Both default off. */
+  FIGMA_SHARED_OAUTH_ENABLED: z.enum(['true', 'false']).default('false'),
+  FIGMA_SHARED_OAUTH_401_RECOVERY_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false'),
   /** All cron routes require `Authorization: Bearer <CRON_SECRET>`. */
   CRON_SECRET: z.string().min(1),
   EMAIL_RECONCILIATION_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -71,6 +80,11 @@ const mock: EnvSchemaType = {
   GITHUB_CLIENT_ID: 'mock-github-client-id',
   GITHUB_CLIENT_SECRET: 'mock-github-client-secret',
   GITHUB_REDIRECT_URI: 'http://localhost:5000/api/github/oauth/callback',
+  FIGMA_CLIENT_ID: 'mock-figma-client-id',
+  FIGMA_CLIENT_SECRET: 'mock-figma-client-secret',
+  FIGMA_REDIRECT_URI: 'http://localhost:5000/api/figma/oauth/callback',
+  FIGMA_SHARED_OAUTH_ENABLED: 'false',
+  FIGMA_SHARED_OAUTH_401_RECOVERY_ENABLED: 'false',
   CRON_SECRET: 'mock-cron-secret',
   EMAIL_RECONCILIATION_ENABLED: 'false',
   EMAIL_OUTBOX_PROCESSING_ENABLED: 'false',
@@ -105,6 +119,12 @@ const processEnv = {
   GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
   GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
   GITHUB_REDIRECT_URI: process.env.GITHUB_REDIRECT_URI,
+  FIGMA_CLIENT_ID: process.env.FIGMA_CLIENT_ID,
+  FIGMA_CLIENT_SECRET: process.env.FIGMA_CLIENT_SECRET,
+  FIGMA_REDIRECT_URI: process.env.FIGMA_REDIRECT_URI,
+  FIGMA_SHARED_OAUTH_ENABLED: process.env.FIGMA_SHARED_OAUTH_ENABLED,
+  FIGMA_SHARED_OAUTH_401_RECOVERY_ENABLED:
+    process.env.FIGMA_SHARED_OAUTH_401_RECOVERY_ENABLED,
   CRON_SECRET: process.env.CRON_SECRET,
   EMAIL_RECONCILIATION_ENABLED: process.env.EMAIL_RECONCILIATION_ENABLED,
   EMAIL_OUTBOX_PROCESSING_ENABLED: process.env.EMAIL_OUTBOX_PROCESSING_ENABLED,

@@ -798,6 +798,11 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           ...(typeRemoval ? { typeRemoval } : {}),
         });
       } catch (error) {
+        const mapped = jsonErrorFromCaught(error, 'Failed to update project');
+        if (mapped.status === 403) {
+          res.status(mapped.status).json({ error: mapped.error });
+          return;
+        }
         sendRouteMutationError(res, error, 'Failed to update project');
       }
     }

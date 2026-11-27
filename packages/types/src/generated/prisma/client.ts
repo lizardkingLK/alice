@@ -176,6 +176,30 @@ export type project_management_connections = Prisma.project_management_connectio
  */
 export type version_control_connections = Prisma.version_control_connectionsModel
 /**
+ * Model figma_oauth_credentials
+ * Canonical server-side OAuth credentials for one Figma user and OAuth app.
+ * Tokens are AES-256-GCM ciphertext and are never selected for wire DTOs.
+ */
+export type figma_oauth_credentials = Prisma.figma_oauth_credentialsModel
+/**
+ * Model figma_connections
+ * One server-side Figma OAuth connection per Alice project.
+ * Legacy project-level credential columns remain during the expand-only migration phase.
+ */
+export type figma_connections = Prisma.figma_connectionsModel
+/**
+ * Model figma_oauth_attempts
+ * Short-lived, single-use Figma OAuth attempt. The verifier is encrypted at rest.
+ */
+export type figma_oauth_attempts = Prisma.figma_oauth_attemptsModel
+/**
+ * Model figma_oauth_operations
+ * Durable coordination journal for future Figma token operations.
+ * Phase 4C defines storage only; no runtime coordinator writes this table yet.
+ * `journal_sequence` is a local stale-worker fence, never evidence of provider issuance order.
+ */
+export type figma_oauth_operations = Prisma.figma_oauth_operationsModel
+/**
  * Model chat_conversations
  * 
  */

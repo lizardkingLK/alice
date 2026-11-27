@@ -77,6 +77,10 @@ export const ModelName = {
   access_requests: 'access_requests',
   project_management_connections: 'project_management_connections',
   version_control_connections: 'version_control_connections',
+  figma_oauth_credentials: 'figma_oauth_credentials',
+  figma_connections: 'figma_connections',
+  figma_oauth_attempts: 'figma_oauth_attempts',
+  figma_oauth_operations: 'figma_oauth_operations',
   chat_conversations: 'chat_conversations',
   chat_attachments: 'chat_attachments',
   chat_tools: 'chat_tools',
@@ -150,6 +154,7 @@ export const ProjectsScalarFieldEnum = {
   vc_connection_id: 'vc_connection_id',
   vc_external: 'vc_external',
   figma_url: 'figma_url',
+  figma_binding_generation: 'figma_binding_generation',
   logo_url: 'logo_url',
   cover_picture: 'cover_picture'
 } as const
@@ -575,6 +580,110 @@ export const Version_control_connectionsScalarFieldEnum = {
 } as const
 
 export type Version_control_connectionsScalarFieldEnum = (typeof Version_control_connectionsScalarFieldEnum)[keyof typeof Version_control_connectionsScalarFieldEnum]
+
+
+export const Figma_oauth_credentialsScalarFieldEnum = {
+  id: 'id',
+  oauth_app_key: 'oauth_app_key',
+  figma_user_id: 'figma_user_id',
+  access_token_enc: 'access_token_enc',
+  refresh_token_enc: 'refresh_token_enc',
+  access_token_expires_at: 'access_token_expires_at',
+  scopes: 'scopes',
+  status: 'status',
+  token_version: 'token_version',
+  last_token_operation_sequence: 'last_token_operation_sequence',
+  last_token_operation_id: 'last_token_operation_id',
+  last_validated_at: 'last_validated_at',
+  last_authorized_by: 'last_authorized_by',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Figma_oauth_credentialsScalarFieldEnum = (typeof Figma_oauth_credentialsScalarFieldEnum)[keyof typeof Figma_oauth_credentialsScalarFieldEnum]
+
+
+export const Figma_connectionsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  credential_id: 'credential_id',
+  binding_generation: 'binding_generation',
+  credential_token_version: 'credential_token_version',
+  authorized_by: 'authorized_by',
+  figma_user_id: 'figma_user_id',
+  access_token_enc: 'access_token_enc',
+  refresh_token_enc: 'refresh_token_enc',
+  access_token_expires_at: 'access_token_expires_at',
+  scopes: 'scopes',
+  verified_file_key: 'verified_file_key',
+  verified_file_name: 'verified_file_name',
+  verified_at: 'verified_at',
+  verification_error: 'verification_error',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Figma_connectionsScalarFieldEnum = (typeof Figma_connectionsScalarFieldEnum)[keyof typeof Figma_connectionsScalarFieldEnum]
+
+
+export const Figma_oauth_attemptsScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  user_id: 'user_id',
+  oauth_app_key: 'oauth_app_key',
+  project_binding_generation: 'project_binding_generation',
+  nonce_hash: 'nonce_hash',
+  code_verifier_enc: 'code_verifier_enc',
+  expires_at: 'expires_at',
+  consumed_at: 'consumed_at',
+  created_at: 'created_at'
+} as const
+
+export type Figma_oauth_attemptsScalarFieldEnum = (typeof Figma_oauth_attemptsScalarFieldEnum)[keyof typeof Figma_oauth_attemptsScalarFieldEnum]
+
+
+export const Figma_oauth_operationsScalarFieldEnum = {
+  id: 'id',
+  journal_sequence: 'journal_sequence',
+  kind: 'kind',
+  status: 'status',
+  oauth_app_key: 'oauth_app_key',
+  oauth_attempt_id: 'oauth_attempt_id',
+  oauth_attempt_nonce_hash: 'oauth_attempt_nonce_hash',
+  authorization_code_hash: 'authorization_code_hash',
+  source_refresh_token_hash: 'source_refresh_token_hash',
+  project_id: 'project_id',
+  project_binding_generation: 'project_binding_generation',
+  initiated_by: 'initiated_by',
+  credential_id: 'credential_id',
+  figma_user_id: 'figma_user_id',
+  figma_identity_verified_at: 'figma_identity_verified_at',
+  expected_token_version: 'expected_token_version',
+  worker_token: 'worker_token',
+  request_started_at: 'request_started_at',
+  request_deadline_at: 'request_deadline_at',
+  pending_token_response_enc: 'pending_token_response_enc',
+  pending_token_key_version: 'pending_token_key_version',
+  pending_access_token_expires_at: 'pending_access_token_expires_at',
+  pending_scopes: 'pending_scopes',
+  pending_token_expires_at: 'pending_token_expires_at',
+  response_received_at: 'response_received_at',
+  provider_http_status: 'provider_http_status',
+  failure_code: 'failure_code',
+  outcome_unknown_at: 'outcome_unknown_at',
+  completed_at: 'completed_at',
+  project_binding_status: 'project_binding_status',
+  project_binding_completed_at: 'project_binding_completed_at',
+  project_binding_skip_reason: 'project_binding_skip_reason',
+  resolution: 'resolution',
+  resolved_at: 'resolved_at',
+  resolved_by: 'resolved_by',
+  retention_expires_at: 'retention_expires_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Figma_oauth_operationsScalarFieldEnum = (typeof Figma_oauth_operationsScalarFieldEnum)[keyof typeof Figma_oauth_operationsScalarFieldEnum]
 
 
 export const Chat_conversationsScalarFieldEnum = {

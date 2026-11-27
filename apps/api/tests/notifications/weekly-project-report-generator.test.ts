@@ -199,7 +199,7 @@ describe('WeeklyProjectReportGenerator', () => {
   it('uses a database advisory lock and an existing canonical snapshot', async () => {
     const canonical = { ...snapshot, completedCount: 5, progressPercent: 50 };
     const tx = {
-      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      $executeRaw: vi.fn().mockResolvedValue(0),
       weekly_project_reports: {
         findFirst: vi.fn().mockResolvedValue({ snapshot: canonical }),
         create: vi.fn().mockResolvedValue({}),
@@ -226,7 +226,7 @@ describe('WeeklyProjectReportGenerator', () => {
         periodEnd: new Date('2026-11-16T00:00:00.000Z'),
       })
     ).resolves.toMatchObject({ status: 'created', snapshot: canonical });
-    expect(tx.$queryRaw).toHaveBeenCalledBefore(
+    expect(tx.$executeRaw).toHaveBeenCalledBefore(
       tx.weekly_project_reports.findFirst
     );
     expect(tx.weekly_project_reports.create).toHaveBeenCalledWith(
