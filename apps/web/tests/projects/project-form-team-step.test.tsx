@@ -9,6 +9,10 @@ vi.mock('@/components/searchable-select', () => ({
   ),
 }));
 
+vi.mock('@/app/projects/_components/project-form-quick-create-user', () => ({
+  ProjectFormQuickCreateUser: () => null,
+}));
+
 describe('Step5Team member search', () => {
   it('filters the member list by name or email', () => {
     const users = [
@@ -34,6 +38,12 @@ describe('Step5Team member search', () => {
 
     render(
       <Step5Team
+        projectMemberIds={['u-avanthi']}
+        setProjectMemberIds={vi.fn()}
+        selectedOwnerId="u-avanthi"
+        setSelectedOwnerId={vi.fn()}
+        users={users}
+        onUserCreated={vi.fn()}
         createInitialTeam
         setCreateInitialTeam={vi.fn()}
         teamName="BM"
@@ -46,18 +56,20 @@ describe('Step5Team member search', () => {
         setTeamTechStack={vi.fn()}
         teamMemberIds={[]}
         setTeamMemberIds={vi.fn()}
-        users={users}
       />
     );
 
-    expect(screen.getByText(/Alice Admin/)).toBeInTheDocument();
-    expect(screen.getByText(/Andriy Lunin/)).toBeInTheDocument();
+    const teamList = screen.getByLabelText('Search team members').closest('div')
+      ?.parentElement?.parentElement;
+    expect(teamList).toBeTruthy();
+    expect(teamList).toHaveTextContent(/Alice Admin/);
+    expect(teamList).toHaveTextContent(/Andriy Lunin/);
 
     fireEvent.change(screen.getByLabelText('Search team members'), {
       target: { value: 'andriy' },
     });
 
-    expect(screen.queryByText(/Alice Admin/)).not.toBeInTheDocument();
-    expect(screen.getByText(/Andriy Lunin/)).toBeInTheDocument();
+    expect(teamList).not.toHaveTextContent(/Alice Admin/);
+    expect(teamList).toHaveTextContent(/Andriy Lunin/);
   });
 });

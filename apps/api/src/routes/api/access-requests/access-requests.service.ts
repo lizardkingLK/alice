@@ -116,6 +116,7 @@ type GrantProject = {
   readonly id: string;
   readonly key: string;
   readonly name: string;
+  readonly logo_url: string | null;
 };
 
 async function loadProjectsById(
@@ -123,7 +124,7 @@ async function loadProjectsById(
 ): Promise<Map<string, GrantProject>> {
   const projectRows = await prisma.projects.findMany({
     where: { id: { in: [...projectIds] } },
-    select: { id: true, key: true, name: true },
+    select: { id: true, key: true, name: true, logo_url: true },
   });
   if (projectRows.length !== projectIds.length) {
     throw new Error('One or more selected projects were not found.');
@@ -329,6 +330,7 @@ async function notifyProjectMembershipsQuietly(params: {
           recipientName: params.user.name,
           projectKey: project.key,
           projectName: project.name,
+          projectLogoUrl: project.logo_url,
           frontendUrl: params.frontendUrl,
           notificationEventId: eventId,
         });

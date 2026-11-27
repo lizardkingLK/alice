@@ -17,8 +17,9 @@ export type GrantProjectSelection = {
 };
 
 /**
- * Prefill Grant rows from requested keys ∩ accessible projects.
- * Returns omitted keys the admin cannot grant.
+ * Prefill Grant rows for every accessible project.
+ * Requested keys ∩ accessible are pre-checked; omitted keys are missing or
+ * not accessible to the reviewing admin.
  */
 export function buildInitialGrantSelections(
   requestedProjectKeys: unknown,

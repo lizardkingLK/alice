@@ -28,18 +28,32 @@ flow: name, email, message, **requested project keys**, and date.
    and **Expires on** to a date after today, then **Renew domain**. A toast
    confirms success and the project grant section opens.
 5. For **pending** or **denied** requests, choose projects **you** can access.
-   Requested keys are pre-checked when they overlap your list; keys you cannot
-   access are noted and omitted.
+   All of your accessible projects appear as checkboxes; requested keys are
+   pre-checked when they overlap. If a requested key is not in the system yet,
+   Alice shows a short notice and a **Create project** link (opens Projects in
+   a new tab with the create form).
 6. For each project:
    - **Grant** — include the project in this approval.
    - **Member** — also add them to the project roster (defaults on with Grant).
 7. **Save** to grant (or re-grant after a prior deny).
-8. For a **pending** request you can also use row-menu **Deny** (no membership
+
+### New client project (domain + owner)
+
+When the requester needs a project that does not exist yet:
+
+1. Allowlist their **domain** first (if it is not already active).
+2. From the grant dialog (or **Projects**), create the project. On the
+   **Members** step, use **Quick create** (Manager or Member), mark a manager
+   as **Owner**, then save.
+3. Return to **Users → Requests**, refresh if needed, open **Edit**, grant the
+   new project, then **Save**.
+4. They finish the invite and use their project.
+5. For a **pending** request you can also use row-menu **Deny** (no membership
    revoke). For a **granted** request, open **Edit** and use **Deny** there —
    Alice warns about shared project memberships, removes memberships on
    projects you can access, deactivates any **email** allowlist for that
    address, and sets the request to denied.
-9. Use **Delete** to remove a request from the list (same idea as deleting an
+6. Use **Delete** to remove a request from the list (same idea as deleting an
    allowlist entry). If you delete a granted request instead of denying it,
    memberships are left as-is under Projects.
 

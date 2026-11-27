@@ -212,6 +212,69 @@ function assertSingleGithubRepoOrThrow(githubRepo: string): void {
   }
 }
 
+async function loadActiveUsersByIds(userIds: readonly string[]) {
+  const uniqueIds = [...new Set(userIds)];
+  const activeUsers = await prisma.users.findMany({
+    where: {
+      id: { in: uniqueIds },
+      active: true,
+      membership_status: 'active',
+    },
+    select: {
+      id: true,
+      role: true,
+    },
+  });
+  return { uniqueIds, activeUsers };
+}
+
+async function assertActiveCreateMemberIds(
+  memberIds: readonly string[] | undefined
+): Promise<void> {
+  if (!memberIds || memberIds.length === 0) {
+    return;
+  }
+
+  const { uniqueIds, activeUsers } = await loadActiveUsersByIds(memberIds);
+  if (activeUsers.length !== uniqueIds.length) {
+    throw new ProjectTeamValidationError(
+      'Project members must be active users.'
+    );
+  }
+}
+
+async function assertInitialTeamUsers(
+  team: CreateProjectInput['team']
+): Promise<void> {
+  if (!team) {
+    return;
+  }
+
+  const selectedMemberIds =
+    team.members?.map((member) => member.user_id) ?? team.member_ids ?? [];
+  const { uniqueIds: teamUserIds, activeUsers } = await loadActiveUsersByIds([
+    team.manager_id,
+    ...selectedMemberIds,
+  ]);
+
+  if (activeUsers.length !== teamUserIds.length) {
+    throw new ProjectTeamValidationError(
+      'Team manager and members must be active users.'
+    );
+  }
+
+  const manager = activeUsers.find((user) => user.id === team.manager_id);
+  if (
+    !manager ||
+    (manager.role !== UserRoleEnum.admin &&
+      manager.role !== UserRoleEnum.manager)
+  ) {
+    throw new ProjectTeamValidationError(
+      'Team manager must have an admin or manager role.'
+    );
+  }
+}
+
 async function assertActorCanChangeLinkedGithubRepo(
   actorId: string,
   previous: Pick<ProjectRow, 'github_repo' | 'github_connection_id'> | null,
@@ -427,7 +490,7 @@ export class ProjectsService {
   }
 
   private async sendProjectMemberAddedEmail(
-    project: Pick<ProjectRow, 'key' | 'name'>,
+    project: Pick<ProjectRow, 'key' | 'name' | 'logo_url'>,
     user: Pick<UserRow, 'email' | 'name'>
   ): Promise<void> {
     if (!this.projectMemberEmailSender) {
@@ -439,6 +502,7 @@ export class ProjectsService {
       recipientName: user.name,
       projectKey: project.key,
       projectName: project.name,
+      projectLogoUrl: project.logo_url,
       frontendUrl: env.FRONTEND_URL,
       notificationEventId: randomUUID(),
     });
@@ -457,6 +521,7 @@ export class ProjectsService {
     const memberIds = [
       ...new Set([
         actorId,
+        ...(input.member_ids ?? []),
         ...(input.team ? [input.team.manager_id] : []),
         ...initialTeamMembers.map((member) => member.user_id),
       ]),
@@ -576,64 +641,12 @@ export class ProjectsService {
     }
 
     if (input.github_repo) {
-      const repo = input.github_repo.trim();
-      const parts = repo.split('/');
-      if (
-        parts.length !== 2 ||
-        !parts[0] ||
-        !parts[1] ||
-        repo.includes(',') ||
-        repo.includes(' ')
-      ) {
-        throw new Error('Only one GitHub repository is allowed per project.');
-      }
+      assertSingleGithubRepoOrThrow(input.github_repo);
     }
 
     await assertActiveOrgAiBindings(input.integration_bindings);
-
-    const team = input.team;
-
-    if (team) {
-      // Collect the selected team member IDs.
-      const selectedMemberIds =
-        team.members?.map((member) => member.user_id) ?? team.member_ids ?? [];
-
-      // Include the manager and remove duplicate user IDs.
-      const teamUserIds = [...new Set([team.manager_id, ...selectedMemberIds])];
-
-      // Find active users matching the supplied IDs.
-      const activeUsers = await prisma.users.findMany({
-        where: {
-          id: { in: teamUserIds },
-          active: true,
-          membership_status: 'active',
-        },
-        select: {
-          id: true,
-          role: true,
-        },
-      });
-
-      // Every selected user must exist and be active.
-      if (activeUsers.length !== teamUserIds.length) {
-        throw new ProjectTeamValidationError(
-          'Team manager and members must be active users.'
-        );
-      }
-
-      // Only admins or managers can manage a team.
-      const manager = activeUsers.find((user) => user.id === team.manager_id);
-
-      if (
-        !manager ||
-        (manager.role !== UserRoleEnum.admin &&
-          manager.role !== UserRoleEnum.manager)
-      ) {
-        throw new ProjectTeamValidationError(
-          'Team manager must have an admin or manager role.'
-        );
-      }
-    }
+    await assertActiveCreateMemberIds(input.member_ids);
+    await assertInitialTeamUsers(input.team);
 
     const prepared = prepareGithubTokenForPersist(
       input,
@@ -642,10 +655,10 @@ export class ProjectsService {
 
     const workflowConfig =
       (prepared.workflow_config as ProjectWorkflowConfig | null) ?? null;
+    const customTypes = workflowConfig?.work_item_types;
     const workItemTypes =
-      workflowConfig?.work_item_types &&
-      workflowConfig.work_item_types.length > 0
-        ? normalizeProjectWorkItemTypeDefs(workflowConfig.work_item_types)
+      customTypes && customTypes.length > 0
+        ? normalizeProjectWorkItemTypeDefs(customTypes)
         : buildDefaultProjectTypeDefs();
 
     return {

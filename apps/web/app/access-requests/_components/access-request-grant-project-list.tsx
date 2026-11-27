@@ -39,8 +39,8 @@ export function AccessRequestGrantProjectList({
   }
 
   return (
-    <div className="max-h-60 space-y-1 overflow-y-auto rounded-md border p-2">
-      <div className="text-muted-foreground grid grid-cols-[1fr_auto_auto] gap-3 px-2 pb-1 text-[11px] font-medium tracking-wide uppercase">
+    <div className="h-60 space-y-1 overflow-y-auto rounded-md border p-2">
+      <div className="text-muted-foreground bg-background sticky top-0 z-10 grid grid-cols-[1fr_auto_auto] gap-3 px-2 pb-1 text-[11px] font-medium tracking-wide uppercase">
         <span>Project</span>
         <span className="w-14 text-center">Grant</span>
         <span className="w-16 text-center">Member</span>

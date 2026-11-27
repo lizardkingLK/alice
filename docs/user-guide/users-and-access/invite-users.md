@@ -41,11 +41,12 @@ Both require an active allowlist match at sign-in.
 
 ## Troubleshooting
 
-| Issue                     | Action                                                                                |
-| ------------------------- | ------------------------------------------------------------------------------------- |
-| Invite email not received | Check spam; confirm allowlist and email spelling                                      |
-| Link expired              | Send a new invite or use [Forgot password](../sign-in-and-account/forgot-password.md) |
-| Access denied after setup | Confirm allowlist entry is **active**                                                 |
+| Issue                                   | Action                                                                                                                                                                                                 |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Invite email not received               | Check **spam/junk**; confirm allowlist and email spelling. Production should use **custom SMTP** in Supabase (e.g. Resend) so Auth invites leave the default Supabase mailer, which is often filtered. |
+| Link expired                            | Send a new invite or use [Forgot password](../sign-in-and-account/forgot-password.md)                                                                                                                  |
+| Access denied after setup               | Confirm allowlist entry is **active**                                                                                                                                                                  |
+| Invited but not on project Members list | Expected until they open the invite and finish signup. Then refresh and add them.                                                                                                                      |
 
 ---
 

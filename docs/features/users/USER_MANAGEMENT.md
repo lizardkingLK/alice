@@ -118,7 +118,12 @@ sequenceDiagram
 
 - **Authentication → URL configuration:** allow `http://localhost:3000/auth/callback` and production callback URL.
 - **Email provider** enabled; customize invite template if needed.
+- **Custom SMTP** (recommended in production): point Supabase Auth at a verified transactional provider (e.g. Resend) so invite/recovery mail is less likely to land in spam. Default Supabase-branded mail is often filtered; Alice’s Resend-backed product notifications do not replace Auth invite delivery.
 - **Service role key** available to the web app server (`SUPABASE_SERVICE_ROLE_KEY` in `lib/env.ts`) — never exposed to the browser.
+
+### Project create / Quick create
+
+Quick create on the project **Members** step can invite a new manager/member the same way as **Users → Add User**. Until the invitee finishes signup (`membership_status = active`), they stay off the members picker and **cannot** be project owner. After a fresh invite the UI reports **Invitation sent** only — it does not pretend to select them on the form. Existing verified users can be selected immediately by email.
 
 ---
 

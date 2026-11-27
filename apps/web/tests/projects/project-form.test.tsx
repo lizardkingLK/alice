@@ -35,7 +35,7 @@ vi.mock('@/app/projects/_services/projects.cache.actions.server', () => ({
 }));
 
 vi.mock('@/app/projects/_helpers/project-creation-draft-storage', () => ({
-  PROJECT_CREATION_DRAFT_VERSION: 4,
+  PROJECT_CREATION_DRAFT_VERSION: 5,
   saveProjectCreationDraft: vi.fn(),
   readProjectCreationDraft: vi.fn(),
   clearProjectCreationDraft: vi.fn(),
@@ -164,7 +164,7 @@ const mockGithubConnection = {
 };
 
 const mockProjectCreationDraft: ProjectCreationDraft = {
-  version: 4,
+  version: 5,
   currentStep: 5,
   basicInfo: {
     name: 'Restored Project',
@@ -221,6 +221,7 @@ const mockProjectCreationDraft: ProjectCreationDraft = {
     teamManagerId: 'user-mgr-2',
     teamTechStack: 'TypeScript',
     teamMemberIds: ['user-member'],
+    projectMemberIds: ['user-mgr-1'],
   },
 };
 
@@ -270,7 +271,14 @@ async function fillStep1Basics() {
   fireEvent.change(screen.getByLabelText(/Project Key/i), {
     target: { value: 'alice' },
   });
-  await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
+}
+
+function selectProjectOwnerOnMembersStep(ownerName = 'Manager One') {
+  fireEvent.click(
+    screen.getByRole('radio', {
+      name: new RegExp(`Mark ${ownerName} as owner`, 'i'),
+    })
+  );
 }
 
 import { clearGithubCache } from '@/app/projects/_services/github-connection-cache';
@@ -324,16 +332,21 @@ describe('ProjectForm Component', () => {
     clearGithubCache();
   });
 
-  it('renders owner dropdown filtered only to managers', async () => {
+  it('shows project members with owner radios on the Members step', async () => {
     render(<ProjectForm users={mockUsers} />);
 
-    const ownerSelect = screen.getByLabelText(/Project Owner/i);
-    expect(ownerSelect).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Project Owner/i)).not.toBeInTheDocument();
 
-    const options = await getComboboxOptions(/Project Owner/i);
-    expect(options).toHaveLength(2);
-    expect(options[0]).toHaveTextContent('Manager One (mgr1@alice.dev)');
-    expect(options[1]).toHaveTextContent('Manager Two (mgr2@alice.dev)');
+    await fillStep1Basics();
+    await advanceCreateFormToTeamStep();
+
+    expect(screen.getByText(/Project members/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('radio', { name: /Mark Manager One as owner/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Quick create user/i })
+    ).toBeInTheDocument();
   });
 
   it('performs required field validation on submit', async () => {
@@ -374,7 +387,6 @@ describe('ProjectForm Component', () => {
     fireEvent.change(screen.getByLabelText(/^Description$/i), {
       target: { value: 'Project description details' },
     });
-    await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
     const startDate = new Date();
     startDate.setFullYear(startDate.getFullYear() + 1);
     const startDateStr = startDate.toISOString().split('T')[0];
@@ -391,6 +403,7 @@ describe('ProjectForm Component', () => {
     });
 
     await advanceCreateFormToTeamStep();
+    selectProjectOwnerOnMembersStep();
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -418,7 +431,7 @@ describe('ProjectForm Component', () => {
       await screen.findByText(/Project creation started/i)
     ).toBeInTheDocument();
     expect(onProjectUpdated).not.toHaveBeenCalled();
-    expect(invalidateProjectDropdownCache).not.toHaveBeenCalled();
+    expect(invalidateProjectDropdownCache).toHaveBeenCalledOnce();
     expect(clearProjectCreationDraft).toHaveBeenCalledOnce();
     expect(clearProjectCreationDraft).toHaveBeenCalledWith('user-admin');
 
@@ -445,6 +458,7 @@ describe('ProjectForm Component', () => {
 
     await fillStep1Basics();
     await advanceCreateFormToTeamStep();
+    selectProjectOwnerOnMembersStep();
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     expect(
@@ -489,6 +503,7 @@ describe('ProjectForm Component', () => {
     expect(createProject).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     await screen.findByRole('checkbox', { name: /Create an initial team/i });
+    selectProjectOwnerOnMembersStep();
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -503,7 +518,7 @@ describe('ProjectForm Component', () => {
         })
       );
     });
-    expect(invalidateProjectDropdownCache).not.toHaveBeenCalled();
+    expect(invalidateProjectDropdownCache).toHaveBeenCalledOnce();
     expect(apiFetch).not.toHaveBeenCalledWith(
       '/api/sprints',
       expect.anything()
@@ -558,7 +573,12 @@ describe('ProjectForm Component', () => {
       target: { value: '  TypeScript  ' },
     });
     await pickComboboxOption(/Team Manager/i, 'Manager One (mgr1@alice.dev)');
-    fireEvent.click(screen.getByRole('checkbox', { name: /Member User/i }));
+    fireEvent.click(
+      screen.getByRole('checkbox', {
+        name: /Member User \(member@alice\.dev\)/i,
+      })
+    );
+    selectProjectOwnerOnMembersStep();
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -608,6 +628,7 @@ describe('ProjectForm Component', () => {
       target: { value: 'Platform Team' },
     });
     await pickComboboxOption(/Team Manager/i, 'Manager One (mgr1@alice.dev)');
+    selectProjectOwnerOnMembersStep();
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -630,6 +651,7 @@ describe('ProjectForm Component', () => {
 
       await fillStep1Basics();
       await advanceCreateFormToTeamStep();
+      selectProjectOwnerOnMembersStep();
       fireEvent.click(
         screen.getByRole('checkbox', { name: /Create an initial team/i })
       );
@@ -651,6 +673,7 @@ describe('ProjectForm Component', () => {
 
     await fillStep1Basics();
     await advanceCreateFormToTeamStep();
+    selectProjectOwnerOnMembersStep();
     fireEvent.click(
       screen.getByRole('checkbox', { name: /Create an initial team/i })
     );
@@ -704,6 +727,7 @@ describe('ProjectForm Component', () => {
 
     await fillStep1Basics();
     await advanceCreateFormToTeamStep();
+    selectProjectOwnerOnMembersStep();
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     expect(
@@ -827,6 +851,9 @@ describe('ProjectForm Component', () => {
     expect(
       screen.getByRole('checkbox', { name: /Create an initial team/i })
     ).toBeChecked();
+    expect(
+      screen.getByRole('radio', { name: /Mark Manager One as owner/i })
+    ).toBeChecked();
     expect(screen.getByLabelText(/Team Name/i)).toHaveValue('Restored Team');
     expect(screen.getByLabelText(/^Description$/i)).toHaveValue(
       'Restored team description'
@@ -838,7 +865,9 @@ describe('ProjectForm Component', () => {
       'Manager Two (mgr2@alice.dev)'
     );
     expect(
-      screen.getByRole('checkbox', { name: /Member User/i })
+      screen.getByRole('checkbox', {
+        name: /Member User \(member@alice\.dev\)/i,
+      })
     ).toBeChecked();
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
@@ -884,9 +913,7 @@ describe('ProjectForm Component', () => {
     expect(screen.getByLabelText(/^Description$/i)).toHaveValue(
       'Restored project description'
     );
-    expect(screen.getByLabelText(/Project Owner/i)).toHaveValue(
-      'Manager One (mgr1@alice.dev)'
-    );
+    expect(screen.queryByLabelText(/Project Owner/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/Start Date/i)).toHaveValue('2099-09-01');
     expect(screen.getByLabelText(/End Date/i)).toHaveValue('2099-10-01');
     expect(onJiraImportToggle).toHaveBeenCalledWith(true);
@@ -943,6 +970,7 @@ describe('ProjectForm Component', () => {
         ...mockProjectCreationDraft.team,
         teamManagerId: 'missing-manager',
         teamMemberIds: ['user-member', 'missing-member'],
+        projectMemberIds: ['missing-owner'],
       },
     });
     render(<ProjectForm users={mockUsers} currentUserId="user-admin" />);
@@ -953,7 +981,9 @@ describe('ProjectForm Component', () => {
 
     expect(screen.getByLabelText(/Team Manager/i)).toHaveValue('');
     expect(
-      screen.getByRole('checkbox', { name: /Member User/i })
+      screen.getByRole('checkbox', {
+        name: /Member User \(member@alice\.dev\)/i,
+      })
     ).toBeChecked();
     expect(
       screen.getByText(/Some saved users are no longer available/i)
@@ -962,9 +992,11 @@ describe('ProjectForm Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     expect(
-      await screen.findByText('Project Owner is required.')
+      await screen.findByText('Select at least one project member.')
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/Project Owner/i)).toHaveValue('');
+    expect(
+      screen.getByRole('radio', { name: /Mark Manager One as owner/i })
+    ).not.toBeChecked();
     expect(createProject).not.toHaveBeenCalled();
   });
 
@@ -1071,12 +1103,12 @@ describe('ProjectForm Component', () => {
     expect(saveProjectCreationDraft).toHaveBeenCalledWith(
       'user-admin',
       expect.objectContaining({
-        version: 4,
+        version: 5,
         currentStep: 5,
         basicInfo: expect.objectContaining({
           name: 'Project Alice',
           key: 'alice',
-          selectedOwnerId: 'user-mgr-1',
+          selectedOwnerId: '',
         }),
         imports: {
           importFromJira: false,
@@ -1106,6 +1138,7 @@ describe('ProjectForm Component', () => {
           teamManagerId: '',
           teamTechStack: '',
           teamMemberIds: [],
+          projectMemberIds: [],
         },
       })
     );
@@ -1340,6 +1373,7 @@ describe('ProjectForm Component', () => {
     await screen.findByRole('checkbox', { name: /Create an initial sprint/i });
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     await screen.findByRole('checkbox', { name: /Create an initial team/i });
+    selectProjectOwnerOnMembersStep();
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -1380,6 +1414,7 @@ describe('ProjectForm Component', () => {
     await screen.findByRole('checkbox', { name: /Create an initial sprint/i });
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     await screen.findByRole('checkbox', { name: /Create an initial team/i });
+    selectProjectOwnerOnMembersStep();
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -1456,6 +1491,7 @@ describe('ProjectForm Component', () => {
     await screen.findByRole('checkbox', { name: /Create an initial sprint/i });
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
     await screen.findByRole('checkbox', { name: /Create an initial team/i });
+    selectProjectOwnerOnMembersStep();
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -1509,7 +1545,6 @@ describe('ProjectForm Component', () => {
     fireEvent.change(screen.getByLabelText(/Project Key/i), {
       target: { value: 'ALICE' },
     });
-    await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
 
     const pastDate = new Date();
     pastDate.setFullYear(pastDate.getFullYear() - 1);
@@ -1536,7 +1571,6 @@ describe('ProjectForm Component', () => {
     fireEvent.change(screen.getByLabelText(/Project Key/i), {
       target: { value: 'ALICE' },
     });
-    await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
 
     const futureDate = new Date();
     futureDate.setFullYear(futureDate.getFullYear() + 1);

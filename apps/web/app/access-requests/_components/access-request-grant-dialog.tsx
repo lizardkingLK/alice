@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -10,7 +10,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import { Loader2, ShieldCheck, ShieldX } from '@repo/ui/lib/icons';
+import {
+  ExternalLink,
+  Loader2,
+  ShieldCheck,
+  ShieldX,
+} from '@repo/ui/lib/icons';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { AccessRequestDomainRenewSection } from '@/app/access-requests/_components/access-request-domain-renew-section';
@@ -37,6 +42,41 @@ import {
   toGrantPayload,
   type GrantProjectSelection,
 } from '@/lib/access-requests/grant-project-selection';
+
+/** Opens Projects registry with the create form (new tab from grant dialog). */
+export const PROJECTS_CREATE_HREF = '/projects?create=1';
+
+function OmittedRequestedKeysNotice({
+  omittedKeys,
+}: Readonly<{ omittedKeys: readonly string[] }>) {
+  if (omittedKeys.length === 0) {
+    return null;
+  }
+  const plural = omittedKeys.length !== 1;
+  return (
+    <div className="bg-muted/40 space-y-2 rounded-md border p-3">
+      <p className="text-muted-foreground text-xs">
+        {plural ? 'The requested projects ' : 'The requested project '}
+        <span className="text-foreground font-mono">
+          {omittedKeys.join(', ')}
+        </span>
+        {plural
+          ? ' are not available in the system yet.'
+          : ' is not available in the system yet.'}
+      </p>
+      <Button asChild size="sm" variant="outline" className="cursor-pointer">
+        <a
+          href={PROJECTS_CREATE_HREF}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <ExternalLink data-icon="inline-start" />
+          Create project
+        </a>
+      </Button>
+    </div>
+  );
+}
 
 type AccessRequestGrantDialogProps = {
   readonly open: boolean;
@@ -75,6 +115,26 @@ function GrantPathHint({
   );
 }
 
+function GrantDialogCancelButton({
+  isPending,
+  onClose,
+}: Readonly<{
+  isPending: boolean;
+  onClose: () => void;
+}>) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      className="cursor-pointer"
+      disabled={isPending}
+      onClick={onClose}
+    >
+      Cancel
+    </Button>
+  );
+}
+
 function GrantDialogFooter({
   mode,
   isPending,
@@ -92,83 +152,54 @@ function GrantDialogFooter({
   onSave: () => void;
   onDenyGranted: () => void;
 }>) {
-  if (mode === 'granted') {
-    return (
-      <DialogFooter className="gap-2 sm:gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="cursor-pointer"
-          disabled={isPending}
-          onClick={onClose}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          variant="destructive"
-          className="cursor-pointer"
-          disabled={isPending || membershipsLoading}
-          onClick={onDenyGranted}
-        >
-          {isPending ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Denying…
-            </>
-          ) : (
-            <>
-              <ShieldX className="size-4" />
-              Deny
-            </>
-          )}
-        </Button>
-      </DialogFooter>
-    );
-  }
+  let primaryAction: ReactNode = null;
 
-  if (mode === 'grant') {
-    return (
-      <DialogFooter className="gap-2 sm:gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="cursor-pointer"
-          disabled={isPending}
-          onClick={onClose}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          className="cursor-pointer"
-          disabled={isPending || projectsEmpty}
-          onClick={onSave}
-        >
-          {isPending ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Saving…
-            </>
-          ) : (
-            'Save'
-          )}
-        </Button>
-      </DialogFooter>
+  if (mode === 'granted') {
+    primaryAction = (
+      <Button
+        type="button"
+        variant="destructive"
+        className="cursor-pointer"
+        disabled={isPending || membershipsLoading}
+        onClick={onDenyGranted}
+      >
+        {isPending ? (
+          <>
+            <Loader2 className="size-4 animate-spin" />
+            Denying…
+          </>
+        ) : (
+          <>
+            <ShieldX className="size-4" />
+            Deny
+          </>
+        )}
+      </Button>
+    );
+  } else if (mode === 'grant') {
+    primaryAction = (
+      <Button
+        type="button"
+        className="cursor-pointer"
+        disabled={isPending || projectsEmpty}
+        onClick={onSave}
+      >
+        {isPending ? (
+          <>
+            <Loader2 className="size-4 animate-spin" />
+            Saving…
+          </>
+        ) : (
+          'Save'
+        )}
+      </Button>
     );
   }
 
   return (
-    <DialogFooter>
-      <Button
-        type="button"
-        variant="outline"
-        className="cursor-pointer"
-        disabled={isPending}
-        onClick={onClose}
-      >
-        Cancel
-      </Button>
+    <DialogFooter className={mode === 'renew' ? undefined : 'gap-2 sm:gap-2'}>
+      <GrantDialogCancelButton isPending={isPending} onClose={onClose} />
+      {primaryAction}
     </DialogFooter>
   );
 }
@@ -379,14 +410,10 @@ export function AccessRequestGrantDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {canGrantProjects && initial.omittedRequestedKeys.length > 0 ? (
-            <p className="text-muted-foreground text-xs">
-              Requested keys you cannot access were omitted:{' '}
-              <span className="font-mono">
-                {initial.omittedRequestedKeys.join(', ')}
-              </span>
-              {'.'}
-            </p>
+          {canGrantProjects ? (
+            <OmittedRequestedKeysNotice
+              omittedKeys={initial.omittedRequestedKeys}
+            />
           ) : null}
 
           <div className="bg-muted max-h-36 overflow-y-auto rounded-md border p-3 font-mono text-xs whitespace-pre-wrap">

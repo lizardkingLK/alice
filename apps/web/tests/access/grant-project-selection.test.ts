@@ -14,7 +14,7 @@ const PROJECTS = [
 ] as const;
 
 describe('buildInitialGrantSelections', () => {
-  it('prefills Grant+Member for accessible requested keys and lists omitted', () => {
+  it('lists all accessible projects and prefills requested keys', () => {
     const result = buildInitialGrantSelections(['ACME', 'MISSING'], PROJECTS);
 
     expect(result.omittedRequestedKeys).toEqual(['MISSING']);
@@ -23,6 +23,13 @@ describe('buildInitialGrantSelections', () => {
       { projectId: 'p2', granted: false, addMember: false },
       { projectId: 'p3', granted: false, addMember: false },
     ]);
+  });
+
+  it('leaves all rows unchecked when no requested keys match', () => {
+    const result = buildInitialGrantSelections(['MISSING'], PROJECTS);
+    expect(result.omittedRequestedKeys).toEqual(['MISSING']);
+    expect(result.selections.every((row) => !row.granted)).toBe(true);
+    expect(result.selections).toHaveLength(3);
   });
 });
 
