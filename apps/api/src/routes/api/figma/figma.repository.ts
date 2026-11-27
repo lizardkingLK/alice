@@ -347,7 +347,7 @@ export class FigmaRepository {
     ]);
   }
 
-  async createCoordinatedOAuthAttempt(input: {
+  createCoordinatedOAuthAttempt(input: {
     oauthAppKey: string;
     projectId: string;
     userId: string;
@@ -385,7 +385,7 @@ export class FigmaRepository {
     });
   }
 
-  async consumeOAuthAttempt(input: {
+  consumeOAuthAttempt(input: {
     projectId: string;
     userId: string;
     nonceHash: string;
@@ -551,7 +551,10 @@ export class FigmaRepository {
           where: { id: existingIdentity.id },
           select: CREDENTIAL_METADATA_SELECT,
         });
-        if (!current || input.expectedTokenVersion !== current.token_version) {
+        if (
+          current?.token_version === undefined ||
+          input.expectedTokenVersion !== current.token_version
+        ) {
           throw new FigmaCredentialVersionConflictError();
         }
         throw new FigmaCredentialReplacementDeferredError();
@@ -662,7 +665,7 @@ export class FigmaRepository {
         credential_id: credential.id,
         authorized_by: input.authorizedBy,
         ...legacyCredentialData,
-        ...(verification ?? {}),
+        ...verification,
       };
 
       return tx.figma_connections.upsert({
@@ -717,7 +720,7 @@ export class FigmaRepository {
     return this.deleteProjectBinding(projectId);
   }
 
-  async deleteProjectBinding(projectId: string): Promise<boolean> {
+  deleteProjectBinding(projectId: string): Promise<boolean> {
     return prisma.$transaction(async (tx) => {
       await acquireAdvisoryLock(tx, projectBindingLockKey(projectId));
       await tx.projects.update({
@@ -777,7 +780,7 @@ export class FigmaRepository {
     });
   }
 
-  async prepareAuthorizationCodeOperation(input: {
+  prepareAuthorizationCodeOperation(input: {
     oauthAppKey: string;
     projectId: string;
     userId: string;
@@ -842,7 +845,7 @@ export class FigmaRepository {
     });
   }
 
-  async prepareRefreshOperation(input: {
+  prepareRefreshOperation(input: {
     oauthAppKey: string;
     credentialId: string;
     figmaUserId: string;
@@ -1151,7 +1154,7 @@ export class FigmaRepository {
     });
   }
 
-  async finalizeAuthorizationOperation(input: {
+  finalizeAuthorizationOperation(input: {
     operationId: string;
     oauthAppKey: string;
     figmaUserId: string;
@@ -1338,7 +1341,7 @@ export class FigmaRepository {
     });
   }
 
-  async finalizeRefreshOperation(input: {
+  finalizeRefreshOperation(input: {
     operationId: string;
     oauthAppKey: string;
     accessTokenEnc: string;
@@ -1377,7 +1380,7 @@ export class FigmaRepository {
           last_token_operation_sequence: true,
         },
       });
-      if (!current || current.oauth_app_key !== input.oauthAppKey) {
+      if (current?.oauth_app_key !== input.oauthAppKey) {
         throw new FigmaOAuthOperationStaleError();
       }
       if (

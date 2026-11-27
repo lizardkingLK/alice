@@ -174,24 +174,20 @@ type CheckedOutSession = {
   released: boolean;
 };
 
+function invokePromise<T>(operation: () => Promise<T>): Promise<T> {
+  return Promise.resolve().then(operation);
+}
+
 function endClientAfterReleaseFailure(client: PoolClient): void {
   const end = (client as unknown as { end?: () => Promise<void> }).end;
   if (!end) return;
-  try {
-    end.call(client).catch(() => {
-      // The release error remains the reported failure. This observer prevents
-      // the best-effort forced close from creating an unhandled rejection.
-    });
-  } catch {
-    // Nothing else can safely recover a client whose pool release and direct
-    // close both fail.
-  }
+  invokePromise(() => end.call(client)).catch(() => {
+    // The release error remains the reported failure. This observer prevents
+    // the best-effort forced close from creating an unhandled rejection.
+  });
 }
 
-function releaseSession(
-  session: CheckedOutSession,
-  destroy: boolean
-): unknown | undefined {
+function releaseSession(session: CheckedOutSession, destroy: boolean): unknown {
   if (session.released) {
     return undefined;
   }
@@ -271,7 +267,7 @@ function checkoutBeforeDeadline(
 
 function promiseBeforeDeadline<T>(input: {
   deadline: number;
-  onTimeout: () => unknown | undefined;
+  onTimeout: () => unknown;
   operation: () => Promise<T>;
   timeoutError: () => Error;
 }): Promise<T> {
@@ -293,15 +289,7 @@ function promiseBeforeDeadline<T>(input: {
       Math.max(0, input.deadline - performance.now())
     );
 
-    let pendingOperation: Promise<T>;
-    try {
-      pendingOperation = input.operation();
-    } catch (error) {
-      settled = true;
-      clearTimeout(timer);
-      reject(error);
-      return;
-    }
+    const pendingOperation = invokePromise(input.operation);
 
     pendingOperation
       .then(
@@ -359,7 +347,8 @@ async function tryAcquireLock(
     if (remainingMs <= 0) {
       throw new PostgresAdvisoryLockTimeoutError();
     }
-    await waitForRetry(Math.min(retryIntervalMs, remainingMs), signal);
+    // Polling must remain sequential because every attempt uses the same session.
+    await waitForRetry(Math.min(retryIntervalMs, remainingMs), signal); // NOSONAR
   }
   throw new PostgresAdvisoryLockTimeoutError();
 }

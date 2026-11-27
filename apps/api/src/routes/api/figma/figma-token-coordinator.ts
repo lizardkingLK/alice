@@ -12,7 +12,6 @@ import {
   encryptSecret,
 } from '../../../lib/secrets/token-crypto';
 import {
-  FigmaOAuthOperationBlockedError,
   FigmaOAuthOperationStaleError,
   type FigmaCanonicalCredentialFull,
   type FigmaCanonicalCredentialMetadata,
@@ -399,4 +398,4 @@ export class FigmaTokenCoordinator {
   }
 }
 
-export { FigmaOAuthOperationBlockedError };
+export { FigmaOAuthOperationBlockedError } from './figma.repository';
