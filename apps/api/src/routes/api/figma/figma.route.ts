@@ -49,10 +49,12 @@ export function createFigmaRouter(deps: { figmaService: FigmaService }) {
           `${doneBase}?figma=denied&error=${encodeURIComponent(oauthError)}`
         );
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Invalid state';
+        const result = jsonErrorFromCaught(
+          error,
+          'Invalid or missing OAuth state.'
+        );
         return res.redirect(
-          `${doneBase}?figma=error&error=${encodeURIComponent(message)}`
+          `${doneBase}?figma=error&error=${encodeURIComponent(result.error)}`
         );
       }
     }
@@ -68,9 +70,9 @@ export function createFigmaRouter(deps: { figmaService: FigmaService }) {
       return res.redirect(`${doneBase}?figma=connected`);
     } catch (error) {
       console.error('error. figma oauth callback failed:', error);
-      const message = error instanceof Error ? error.message : 'OAuth failed';
+      const result = jsonErrorFromCaught(error, 'Figma OAuth failed');
       return res.redirect(
-        `${doneBase}?figma=error&error=${encodeURIComponent(message)}`
+        `${doneBase}?figma=error&error=${encodeURIComponent(result.error)}`
       );
     }
   });

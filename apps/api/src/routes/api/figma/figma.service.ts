@@ -447,6 +447,9 @@ export class FigmaService {
     const expiresAt = new Date(utcNow().getTime() + tokens.expires_in * 1000);
     await this.figmaRepository.updateTokens(connection.project_id, {
       accessTokenEnc: encryptSecret(tokens.access_token),
+      refreshTokenEnc: tokens.refresh_token
+        ? encryptSecret(tokens.refresh_token)
+        : undefined,
       accessTokenExpiresAt: expiresAt,
     });
     return tokens.access_token;

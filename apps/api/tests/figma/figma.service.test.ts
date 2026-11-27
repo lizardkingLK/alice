@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { FigmaOAuthCredentialStatus } from '@repo/types/prisma';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  decryptSecret,
   encryptSecret,
   isEncryptedSecret,
 } from '../../src/lib/secrets/token-crypto';
@@ -414,6 +415,53 @@ describe('FigmaService', () => {
     expect(upsertConnection).toHaveBeenCalledOnce();
     expect(findCredentialByProjectBinding).not.toHaveBeenCalled();
     expect(deleteProjectBinding).not.toHaveBeenCalled();
+  });
+
+  it('persists a rotated refresh token on the legacy refresh path', async () => {
+    findFullConnectionByProjectId.mockResolvedValue({
+      ...publicConnection({
+        access_token_expires_at: new Date(Date.now() - 60_000),
+      }),
+      access_token_enc: encryptSecret('expired-access-token'),
+      refresh_token_enc: encryptSecret('old-refresh-token'),
+    });
+    updateVerification.mockImplementation(async (_projectId, verification) =>
+      publicConnection({
+        verified_file_key: verification.verifiedFileKey,
+        verified_file_name: verification.verifiedFileName,
+        verified_at: verification.verifiedAt,
+        verification_error: verification.verificationError,
+      })
+    );
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            access_token: 'rotated-access-token',
+            refresh_token: 'rotated-refresh-token',
+            token_type: 'bearer',
+            expires_in: 3600,
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ file: { name: 'Alice Design' } }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+    await service.verifyCurrentDesign(USER_ID, PROJECT_ID);
+
+    expect(updateTokens).toHaveBeenCalledOnce();
+    const tokenUpdate = updateTokens.mock.calls[0]?.[1];
+    expect(decryptSecret(tokenUpdate.accessTokenEnc)).toBe(
+      'rotated-access-token'
+    );
+    expect(decryptSecret(tokenUpdate.refreshTokenEnc)).toBe(
+      'rotated-refresh-token'
+    );
   });
 
   it('coordinates one refresh and retries the resource once after a 401', async () => {

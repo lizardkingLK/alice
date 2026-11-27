@@ -676,7 +676,11 @@ export class FigmaRepository {
 
   updateTokens(
     projectId: string,
-    input: { accessTokenEnc: string; accessTokenExpiresAt: Date }
+    input: {
+      accessTokenEnc: string;
+      refreshTokenEnc?: string;
+      accessTokenExpiresAt: Date;
+    }
   ): Promise<FigmaConnectionFull> {
     // Legacy service path only. Canonical refreshes require the future locked
     // refresh method and must not be routed through this project-row update.
@@ -684,6 +688,9 @@ export class FigmaRepository {
       where: { project_id: projectId },
       data: {
         access_token_enc: input.accessTokenEnc,
+        ...(input.refreshTokenEnc !== undefined
+          ? { refresh_token_enc: input.refreshTokenEnc }
+          : {}),
         access_token_expires_at: input.accessTokenExpiresAt,
       },
       select: CONNECTION_FULL_SELECT,
